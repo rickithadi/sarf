@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/observations",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/weather",
+      "schedule": "0 */3 * * *"
+    },
+    {
+      "path": "/api/cron/waves",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/tides",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}
