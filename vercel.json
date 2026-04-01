@@ -2,19 +2,19 @@
   "crons": [
     {
       "path": "/api/cron/observations",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/weather",
-      "schedule": "0 */3 * * *"
+      "schedule": "0 7 * * *"
     },
     {
       "path": "/api/cron/waves",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 8 * * *"
     },
     {
       "path": "/api/cron/tides",
-      "schedule": "0 6 * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }

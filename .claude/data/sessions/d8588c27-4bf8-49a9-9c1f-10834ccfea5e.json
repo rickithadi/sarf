@@ -1,6 +1,11 @@
 {
   "session_id": "d8588c27-4bf8-49a9-9c1f-10834ccfea5e",
   "prompts": [
-    "does pulling the raw data work yet? i want to test that and cron jobs before the anthropic intergration"
+    "does pulling the raw data work yet? i want to test that and cron jobs before the anthropic intergration",
+    "remote: Resolving deltas: 100% (9/9), done.\nremote: error: GH013: Repository rule violations found for refs/heads/main.\nremote:\nremote: - GITHUB PUSH PROTECTION\nremote:   \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\nremote:     Resolve the following violations before pushing again\nremote:\nremote:     - Push cannot contain secrets\nremote:\nremote:\nremote:      (?) Learn how to resolve a blocked push\nremote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push\nremote:\nremote:\nremote:       \u2014\u2014 Anthropic API Key \u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\u2014\nremote:        locations:\nremote:          - commit: beadb288bf818b2be3f71062467a050360c08501\nremote:            path: .env:10\nremote:\nremote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.\nremote:        https://github.com/rickithadi/sarf/security/secret-scanning/unblock-secret/3BjT8vOr9gi4DtjKGXsilcGuVO3\nremote:\nremote:\nremote:\nTo github.com:rickithadi/sarf.git\n ! [remote rejected] main -> main (push declined due to repository rule violations)\nerror: failed to push some refs to 'github.com:rickithadi/sarf.git'",
+    " GET /api/cron/observations 401 in 195ms",
+    "BOM API error: 404 Not Found",
+    "why is BOM failing?",
+    "i am in australia though?"
   ]
 }
