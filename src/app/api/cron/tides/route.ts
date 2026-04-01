@@ -5,6 +5,7 @@ import { breaks, tides } from '@/lib/db/schema';
 import { fetchWorldTides } from '@/lib/worldtides/client';
 import { fetchBomTides } from '@/lib/bom/tides';
 import { and, eq, gte } from 'drizzle-orm';
+import { deleteCached, cacheKeys } from '@/lib/cache/redis';
 
 export async function GET(request: NextRequest) {
   // Verify cron authentication
@@ -68,11 +69,18 @@ export async function GET(request: NextRequest) {
     const failCount = results.filter((r) => !r.success).length;
     const totalEvents = results.reduce((sum, r) => sum + (r.count || 0), 0);
 
+    // Clear report cache for successfully updated breaks
+    const successfulBreaks = results.filter((r) => r.success).map((r) => r.breakId);
+    for (const breakId of successfulBreaks) {
+      await deleteCached(cacheKeys.surfReport(breakId));
+    }
+
     return cronResponse({
       message: `Tide data updated`,
       success: successCount,
       failed: failCount,
       totalEvents,
+      cacheCleared: successfulBreaks.length,
       results,
     });
   } catch (error) {

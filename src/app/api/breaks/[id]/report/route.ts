@@ -3,12 +3,14 @@ import { db } from '@/lib/db';
 import { breaks } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateSurfReport } from '@/lib/claude/report-generator';
+import { deleteCached, cacheKeys } from '@/lib/cache/redis';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const refresh = request.nextUrl.searchParams.get('refresh') === 'true';
 
   try {
     // Verify break exists
@@ -21,6 +23,11 @@ export async function GET(
         { error: 'Break not found' },
         { status: 404 }
       );
+    }
+
+    // Clear cache if refresh requested
+    if (refresh) {
+      await deleteCached(cacheKeys.surfReport(id));
     }
 
     // Generate report (uses 30-min cache)

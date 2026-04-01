@@ -3,6 +3,7 @@ import { verifyCronAuth, cronResponse } from '@/lib/cron/auth';
 import { db } from '@/lib/db';
 import { breaks, weatherForecasts } from '@/lib/db/schema';
 import { fetchWeatherForecast } from '@/lib/open-meteo/weather';
+import { deleteCached, cacheKeys } from '@/lib/cache/redis';
 
 export async function GET(request: NextRequest) {
   // Verify cron authentication
@@ -65,11 +66,18 @@ export async function GET(request: NextRequest) {
     const failCount = results.filter((r) => !r.success).length;
     const totalPoints = results.reduce((sum, r) => sum + (r.count || 0), 0);
 
+    // Clear report cache for successfully updated breaks
+    const successfulBreaks = results.filter((r) => r.success).map((r) => r.breakId);
+    for (const breakId of successfulBreaks) {
+      await deleteCached(cacheKeys.surfReport(breakId));
+    }
+
     return cronResponse({
       message: `Weather forecasts updated`,
       success: successCount,
       failed: failCount,
       totalPoints,
+      cacheCleared: successfulBreaks.length,
       results,
     });
   } catch (error) {

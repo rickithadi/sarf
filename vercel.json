@@ -6,15 +6,19 @@
     },
     {
       "path": "/api/cron/weather",
-      "schedule": "0 7 * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/waves",
-      "schedule": "0 8 * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/tides",
-      "schedule": "0 9 * * *"
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/reports",
+      "schedule": "5 6 * * *"
     }
   ]
 }

@@ -6,9 +6,17 @@ import { NextRequest, NextResponse } from 'next/server';
  * @returns NextResponse with 401 if unauthorized, null if authorized
  */
 export function verifyCronAuth(request: NextRequest): NextResponse | null {
-  // Skip auth in development if no CRON_SECRET is set
+  // Skip auth in development mode for localhost requests
+  const isDev = process.env.NODE_ENV === 'development';
+  const isLocalhost = request.headers.get('host')?.includes('localhost');
+
+  if (isDev && isLocalhost) {
+    console.log('Development mode: skipping cron auth for localhost');
+    return null;
+  }
+
   const expectedToken = process.env.CRON_SECRET;
-  if (!expectedToken && process.env.NODE_ENV === 'development') {
+  if (!expectedToken && isDev) {
     console.warn('CRON_SECRET not set - skipping auth in development');
     return null;
   }

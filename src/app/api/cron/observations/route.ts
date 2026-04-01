@@ -4,6 +4,10 @@ import { db } from '@/lib/db';
 import { breaks, observations } from '@/lib/db/schema';
 import { fetchBomObservations } from '@/lib/bom/observations';
 import { fetchCurrentConditions } from '@/lib/open-meteo/current';
+import { deleteCached, cacheKeys } from '@/lib/cache/redis';
+
+// TODO: Upgrade to Vercel Pro to enable more frequent cron schedules (e.g., */10 * * * * for 10-min updates).
+// Currently limited to daily runs on Hobby plan. See vercel.json for schedule configuration.
 
 export async function GET(request: NextRequest) {
   // Verify cron authentication
@@ -115,10 +119,17 @@ export async function GET(request: NextRequest) {
     const successCount = results.filter((r) => r.success).length;
     const failCount = results.filter((r) => !r.success).length;
 
+    // Clear report cache for successfully updated breaks
+    const successfulBreaks = results.filter((r) => r.success).map((r) => r.breakId);
+    for (const breakId of successfulBreaks) {
+      await deleteCached(cacheKeys.surfReport(breakId));
+    }
+
     return cronResponse({
       message: `Observations updated`,
       success: successCount,
       failed: failCount,
+      cacheCleared: successfulBreaks.length,
       results,
     });
   } catch (error) {
