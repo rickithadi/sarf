@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { breaks, observations, waves } from '@/lib/db/schema';
 import { desc, eq } from 'drizzle-orm';
-import { calculateWindQuality, calculateSurfRating } from '@/lib/breaks/wind-quality';
+import { calculateWindQuality } from '@/lib/breaks/wind-quality';
 import { getCached, cacheKeys } from '@/lib/cache/redis';
-import { SurfReport } from '@/lib/claude/report-generator';
+import { SurfReportWithTimestamp } from '@/lib/claude/report-generator';
 
 export async function GET() {
   try {
@@ -30,26 +30,19 @@ export async function GET() {
           ? calculateWindQuality(latestObs.windDir, b.optimalWindDirection, latestObs.windSpeedKmh)
           : null;
 
-        // Get Claude's rating from cached report (falls back to calculated if no cache)
+        // Get Claude's rating from cached report (no fallback to calculated rating)
         let rating: number | null = null;
+        let reportGeneratedAt: string | null = null;
         try {
-          const cachedReport = await getCached<SurfReport>(cacheKeys.surfReport(b.id));
+          const cachedReport = await getCached<SurfReportWithTimestamp>(cacheKeys.surfReport(b.id));
           if (cachedReport?.rating) {
             rating = cachedReport.rating;
+            reportGeneratedAt = cachedReport.generatedAt;
           }
         } catch {
-          // Redis error - fall through to calculated rating
+          // Redis error - rating stays null
         }
-
-        // Fall back to calculated rating if no cached report
-        if (rating === null) {
-          rating = calculateSurfRating({
-            windQuality,
-            windSpeedKmh: latestObs?.windSpeedKmh ?? null,
-            waveHeight: latestWave?.waveHeight ?? null,
-            wavePeriod: latestWave?.wavePeriod ?? null,
-          });
-        }
+        // No fallback to calculated rating - use Claude's rating or null
 
         return {
           id: b.id,
@@ -58,6 +51,7 @@ export async function GET() {
           lat: b.lat,
           lng: b.lng,
           rating: rating || null,
+          reportGeneratedAt,
           currentConditions: latestObs
             ? {
                 airTemp: latestObs.airTemp,

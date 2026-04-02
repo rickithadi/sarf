@@ -16,16 +16,20 @@ const SurfReportSchema = z.object({
   bestTime: z.string(),
 });
 
+export type SurfReportWithTimestamp = z.infer<typeof SurfReportSchema> & {
+  generatedAt: string;
+};
+
 export type SurfReport = z.infer<typeof SurfReportSchema>;
 
 /**
  * Generate a surf report for a specific break
  * Uses Claude AI with 30-minute caching
  */
-export async function generateSurfReport(breakId: string): Promise<SurfReport | null> {
+export async function generateSurfReport(breakId: string): Promise<SurfReportWithTimestamp | null> {
   // Check cache first
   const cacheKey = cacheKeys.surfReport(breakId);
-  const cached = await getCached<SurfReport>(cacheKey);
+  const cached = await getCached<SurfReportWithTimestamp>(cacheKey);
   if (cached) {
     return cached;
   }
@@ -148,10 +152,14 @@ export async function generateSurfReport(breakId: string): Promise<SurfReport | 
     const parsed = JSON.parse(jsonMatch[0]);
     const validated = SurfReportSchema.parse(parsed);
 
-    // Cache the result
-    await setCached(cacheKey, validated, cacheTTL.surfReport);
+    // Add timestamp and cache the result
+    const reportWithTimestamp: SurfReportWithTimestamp = {
+      ...validated,
+      generatedAt: new Date().toISOString(),
+    };
+    await setCached(cacheKey, reportWithTimestamp, cacheTTL.surfReport);
 
-    return validated;
+    return reportWithTimestamp;
   } catch (error) {
     console.error('Failed to generate surf report:', error);
     return null;

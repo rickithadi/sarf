@@ -87,6 +87,7 @@ interface BreakDetailClientProps {
     conditions: string;
     forecast: string;
     bestTime: string;
+    generatedAt?: string;
   } | null;
 }
 
@@ -215,7 +216,9 @@ export function BreakDetailClient({ detail, report }: BreakDetailClientProps) {
                   <p className="text-sm">{report.bestTime}</p>
                 </div>
               </div>
-              <p className="mt-4 text-xs text-blue-600">AI-generated report based on current data</p>
+              <p className="mt-4 text-xs text-blue-600">
+                AI-generated report{report.generatedAt ? ` · ${format(new Date(report.generatedAt), 'MMM d, h:mm a')}` : ''}
+              </p>
             </section>
           )}
 

@@ -66,6 +66,7 @@ interface SurfReport {
   conditions: string;
   forecast: string;
   bestTime: string;
+  generatedAt?: string;
 }
 
 async function getBreakDetail(breakId: string): Promise<BreakDetail | null> {
@@ -93,8 +94,9 @@ async function getSurfReport(breakId: string): Promise<SurfReport | null> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   try {
+    // Use no-store to always get fresh data from Redis cache
     const res = await fetch(`${baseUrl}/api/breaks/${breakId}/report`, {
-      next: { revalidate: 300 },
+      cache: 'no-store',
     });
 
     if (!res.ok) {

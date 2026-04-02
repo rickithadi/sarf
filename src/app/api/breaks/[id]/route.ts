@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { breaks, observations, waves, weatherForecasts, tides } from '@/lib/db/schema';
 import { desc, eq, gte, and, asc, lte } from 'drizzle-orm';
 import { calculateWindQuality, degreesToCardinal, windQualityDescription } from '@/lib/breaks/wind-quality';
-import { addDays } from 'date-fns';
+import { addDays, startOfDay } from 'date-fns';
 
 export async function GET(
   request: NextRequest,
@@ -25,6 +25,7 @@ export async function GET(
     }
 
     const now = new Date();
+    const todayStart = startOfDay(now);
     const fourteenDaysLater = addDays(now, 14);
 
     // Get latest observation
@@ -39,21 +40,21 @@ export async function GET(
       orderBy: [asc(waves.time)],
     });
 
-    // Get 14-day wave forecast
+    // Get 14-day wave forecast (include full day's data from start of today)
     const waveForecast = await db.query.waves.findMany({
       where: and(
         eq(waves.breakId, id),
-        gte(waves.time, now),
+        gte(waves.time, todayStart),
         lte(waves.time, fourteenDaysLater)
       ),
       orderBy: [asc(waves.time)],
     });
 
-    // Get 14-day weather forecast
+    // Get 14-day weather forecast (include full day's data from start of today)
     const weatherForecast = await db.query.weatherForecasts.findMany({
       where: and(
         eq(weatherForecasts.breakId, id),
-        gte(weatherForecasts.time, now),
+        gte(weatherForecasts.time, todayStart),
         lte(weatherForecasts.time, fourteenDaysLater)
       ),
       orderBy: [asc(weatherForecasts.time)],
