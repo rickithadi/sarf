@@ -20,7 +20,7 @@ async function fixPrimaryKeys() {
   const tables = ['observations', 'weather_forecasts', 'waves'];
 
   for (const table of tables) {
-    const hasPK = constraints.some((c: { table_name: string }) => c.table_name === table);
+    const hasPK = (constraints as unknown as Array<{ table_name: string }>).some((c) => c.table_name === table);
 
     if (!hasPK) {
       console.log(`Adding PRIMARY KEY to ${table}...`);

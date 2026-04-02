@@ -1,0 +1,8 @@
+{
+  "session_id": "8e85a750-4843-44b3-b231-e2702ce1771b",
+  "prompts": [
+    "go",
+    "TypeError: can't access property \"map\", hourlyForecast is undefined\nSource\n\nsrc/app/(site)/[breakId]/client.tsx (100:44) @ hourlyForecast\n\n   98 |\n   99 |   // Convert hourly forecast to the format expected by components\n> 100 |   const hourlyData: HourlyForecastData[] = hourlyForecast.map((h) => ({\n      |                                            ^\n  101 |     time: new Date(h.time),\n  102 |     waveHeight: h.waveHeight,\n  103 |     wavePeriod: h.wavePeriod,",
+    "fix the disparity between the ratings on home page and break page"
+  ]
+}

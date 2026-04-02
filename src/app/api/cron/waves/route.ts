@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch marine forecast for each break
     for (const b of allBreaks) {
-      const forecast = await fetchMarineForecast(b.lat, b.lng, 3);
+      const forecast = await fetchMarineForecast(b.lat, b.lng, 14);
 
       if (forecast.length === 0) {
         results.push({ breakId: b.id, success: false, error: 'No marine data' });

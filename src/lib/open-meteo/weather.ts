@@ -14,6 +14,7 @@ const WeatherResponseSchema = z.object({
     wind_gusts_10m: z.string(),
     wind_direction_10m: z.string(),
     precipitation: z.string(),
+    uv_index: z.string().optional(),
   }),
   hourly: z.object({
     time: z.array(z.string()),
@@ -21,7 +22,20 @@ const WeatherResponseSchema = z.object({
     wind_gusts_10m: z.array(z.number().nullable()),
     wind_direction_10m: z.array(z.number().nullable()),
     precipitation: z.array(z.number().nullable()),
+    uv_index: z.array(z.number().nullable()).optional(),
   }),
+  daily_units: z.object({
+    time: z.string(),
+    sunrise: z.string(),
+    sunset: z.string(),
+    uv_index_max: z.string(),
+  }).optional(),
+  daily: z.object({
+    time: z.array(z.string()),
+    sunrise: z.array(z.string()),
+    sunset: z.array(z.string()),
+    uv_index_max: z.array(z.number().nullable()),
+  }).optional(),
 });
 
 export interface WeatherForecastPoint {
@@ -30,29 +44,54 @@ export interface WeatherForecastPoint {
   windGusts10m: number | null;
   windDirection10m: number | null;
   precipitation: number | null;
+  uvIndex: number | null;
+}
+
+export interface DailyWeatherData {
+  date: Date;
+  sunrise: Date;
+  sunset: Date;
+  uvIndexMax: number | null;
+}
+
+export interface WeatherForecastResult {
+  hourly: WeatherForecastPoint[];
+  daily: DailyWeatherData[];
 }
 
 /**
- * Fetch weather forecast from Open-Meteo BOM API
+ * Fetch weather forecast from Open-Meteo API
  * @param lat - Latitude
  * @param lng - Longitude
- * @param forecastDays - Number of days to forecast (default 3)
+ * @param forecastDays - Number of days to forecast (default 14)
  * @returns Array of hourly forecast data
  */
 export async function fetchWeatherForecast(
   lat: number,
   lng: number,
-  forecastDays: number = 3
+  forecastDays: number = 14
 ): Promise<WeatherForecastPoint[]> {
+  const result = await fetchWeatherForecastFull(lat, lng, forecastDays);
+  return result.hourly;
+}
+
+/**
+ * Fetch full weather forecast including daily data (sunrise/sunset/UV)
+ */
+export async function fetchWeatherForecastFull(
+  lat: number,
+  lng: number,
+  forecastDays: number = 14
+): Promise<WeatherForecastResult> {
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lng.toString(),
-    hourly: 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation',
+    hourly: 'wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation,uv_index',
+    daily: 'sunrise,sunset,uv_index_max',
     timezone: 'Australia/Melbourne',
     forecast_days: forecastDays.toString(),
   });
 
-  // Use standard forecast API (BOM wrapper often returns nulls)
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
 
   try {
@@ -62,7 +101,7 @@ export async function fetchWeatherForecast(
 
     if (!response.ok) {
       console.error(`Open-Meteo weather API error: ${response.status} ${response.statusText}`);
-      return [];
+      return { hourly: [], daily: [] };
     }
 
     const data = await response.json();
@@ -70,25 +109,91 @@ export async function fetchWeatherForecast(
 
     if (!parsed.success) {
       console.error('Open-Meteo weather response validation failed:', parsed.error);
-      return [];
+      return { hourly: [], daily: [] };
     }
 
-    const { hourly } = parsed.data;
-    const forecasts: WeatherForecastPoint[] = [];
+    const { hourly, daily } = parsed.data;
 
+    // Parse hourly data
+    const hourlyForecasts: WeatherForecastPoint[] = [];
     for (let i = 0; i < hourly.time.length; i++) {
-      forecasts.push({
+      hourlyForecasts.push({
         time: new Date(hourly.time[i]),
         windSpeed10m: hourly.wind_speed_10m[i],
         windGusts10m: hourly.wind_gusts_10m[i],
         windDirection10m: hourly.wind_direction_10m[i],
         precipitation: hourly.precipitation[i],
+        uvIndex: hourly.uv_index?.[i] ?? null,
       });
     }
 
-    return forecasts;
+    // Parse daily data
+    const dailyData: DailyWeatherData[] = [];
+    if (daily) {
+      for (let i = 0; i < daily.time.length; i++) {
+        dailyData.push({
+          date: new Date(daily.time[i]),
+          sunrise: new Date(daily.sunrise[i]),
+          sunset: new Date(daily.sunset[i]),
+          uvIndexMax: daily.uv_index_max[i],
+        });
+      }
+    }
+
+    return { hourly: hourlyForecasts, daily: dailyData };
   } catch (error) {
     console.error('Failed to fetch Open-Meteo weather:', error);
-    return [];
+    return { hourly: [], daily: [] };
   }
+}
+
+/**
+ * Get UV index description and SPF recommendation
+ */
+export function getUVDescription(uvIndex: number | null): {
+  level: 'low' | 'moderate' | 'high' | 'very-high' | 'extreme';
+  description: string;
+  spfRecommendation: string;
+} {
+  if (uvIndex === null || uvIndex < 0) {
+    return { level: 'low', description: 'N/A', spfRecommendation: '' };
+  }
+
+  if (uvIndex < 3) {
+    return {
+      level: 'low',
+      description: 'Low',
+      spfRecommendation: 'SPF 15+',
+    };
+  }
+
+  if (uvIndex < 6) {
+    return {
+      level: 'moderate',
+      description: 'Moderate',
+      spfRecommendation: 'SPF 30+',
+    };
+  }
+
+  if (uvIndex < 8) {
+    return {
+      level: 'high',
+      description: 'High',
+      spfRecommendation: 'SPF 30+, seek shade',
+    };
+  }
+
+  if (uvIndex < 11) {
+    return {
+      level: 'very-high',
+      description: 'Very High',
+      spfRecommendation: 'SPF 50+, limit exposure',
+    };
+  }
+
+  return {
+    level: 'extreme',
+    description: 'Extreme',
+    spfRecommendation: 'SPF 50+, avoid midday sun',
+  };
 }

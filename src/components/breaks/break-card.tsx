@@ -1,5 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import { RatingBadge } from '@/components/ui/rating-badge';
+import { FavoriteButton } from '@/components/ui/favorites';
+import { WindArrow } from '@/components/ui/wind-arrow';
+import { useUnit } from '@/components/ui/unit-toggle';
+import { formatSurfRange, formatWindSpeed, formatTemperature } from '@/lib/utils/units';
 import { WindQuality } from '@/lib/breaks/wind-quality';
 
 interface BreakCardProps {
@@ -52,77 +58,92 @@ export function BreakCard({
   currentConditions,
   waveData,
 }: BreakCardProps) {
+  const { unit } = useUnit();
+
   return (
-    <Link
-      href={`/${id}`}
-      className="block rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
-          <p className="text-sm text-gray-500">{region}</p>
-        </div>
-        <RatingBadge rating={rating} />
+    <div className="relative rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+      {/* Favorite button */}
+      <div className="absolute top-4 right-4">
+        <FavoriteButton breakId={id} size="sm" />
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-xs font-medium uppercase text-gray-500">Wind</p>
-          {currentConditions ? (
-            <div className="mt-1">
-              <p className="text-sm font-medium text-gray-900">
-                {currentConditions.windSpeedKmh !== null
-                  ? `${currentConditions.windSpeedKmh} km/h`
-                  : 'N/A'}{' '}
-                {degreesToCardinal(currentConditions.windDir)}
-              </p>
-              <p
-                className={`text-xs font-medium capitalize ${windQualityColor(
-                  currentConditions.windQuality
-                )}`}
-              >
-                {currentConditions.windQuality?.replace('-', ' ') || 'Unknown'}
-              </p>
-            </div>
-          ) : (
-            <p className="mt-1 text-sm text-gray-400">No data</p>
-          )}
-        </div>
-
-        <div>
-          <p className="text-xs font-medium uppercase text-gray-500">Waves</p>
-          {waveData && waveData.height !== null ? (
-            <div className="mt-1">
-              <p className="text-sm font-medium text-gray-900">
-                {waveData.height.toFixed(1)}m
-              </p>
-              {waveData.period !== null && (
-                <p className="text-xs text-gray-500">{waveData.period}s period</p>
-              )}
-            </div>
-          ) : (
-            <p className="mt-1 text-sm text-gray-400">No data</p>
-          )}
-        </div>
-
-        {currentConditions && currentConditions.airTemp !== null && (
+      <Link href={`/${id}`} className="block">
+        <div className="flex items-start justify-between pr-8">
           <div>
-            <p className="text-xs font-medium uppercase text-gray-500">Temp</p>
-            <p className="mt-1 text-sm font-medium text-gray-900">
-              {currentConditions.airTemp}°C
-            </p>
+            <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
+            <p className="text-sm text-gray-500">{region}</p>
+          </div>
+          <RatingBadge rating={rating} />
+        </div>
+
+        {/* Wave height highlight */}
+        {waveData && waveData.height !== null && (
+          <div className="mt-3">
+            <span className="text-2xl font-bold text-blue-600">
+              {formatSurfRange(waveData.height, waveData.period, unit)}
+            </span>
           </div>
         )}
 
-        {currentConditions && currentConditions.gustKmh !== null && (
+        <div className="mt-4 grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs font-medium uppercase text-gray-500">Gusts</p>
-            <p className="mt-1 text-sm font-medium text-gray-900">
-              {currentConditions.gustKmh} km/h
-            </p>
+            <p className="text-xs font-medium uppercase text-gray-500">Wind</p>
+            {currentConditions ? (
+              <div className="mt-1 flex items-center gap-2">
+                <WindArrow
+                  direction={currentConditions.windDir}
+                  quality={currentConditions.windQuality}
+                  size="sm"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {formatWindSpeed(currentConditions.windSpeedKmh, unit)}{' '}
+                    {degreesToCardinal(currentConditions.windDir)}
+                  </p>
+                  <p
+                    className={`text-xs font-medium capitalize ${windQualityColor(
+                      currentConditions.windQuality
+                    )}`}
+                  >
+                    {currentConditions.windQuality?.replace('-', ' ') || 'Unknown'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-1 text-sm text-gray-400">No data</p>
+            )}
           </div>
-        )}
-      </div>
-    </Link>
+
+          <div>
+            <p className="text-xs font-medium uppercase text-gray-500">Period</p>
+            {waveData && waveData.period !== null ? (
+              <p className="mt-1 text-sm font-medium text-gray-900">
+                {Math.round(waveData.period)}s
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-gray-400">-</p>
+            )}
+          </div>
+
+          {currentConditions && currentConditions.airTemp !== null && (
+            <div>
+              <p className="text-xs font-medium uppercase text-gray-500">Temp</p>
+              <p className="mt-1 text-sm font-medium text-gray-900">
+                {formatTemperature(currentConditions.airTemp, unit)}
+              </p>
+            </div>
+          )}
+
+          {currentConditions && currentConditions.gustKmh !== null && (
+            <div>
+              <p className="text-xs font-medium uppercase text-gray-500">Gusts</p>
+              <p className="mt-1 text-sm font-medium text-gray-900">
+                {formatWindSpeed(currentConditions.gustKmh, unit)}
+              </p>
+            </div>
+          )}
+        </div>
+      </Link>
+    </div>
   );
 }

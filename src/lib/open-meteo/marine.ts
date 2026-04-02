@@ -41,13 +41,13 @@ export interface MarineForecastPoint {
  * Fetch marine/wave forecast from Open-Meteo Marine API
  * @param lat - Latitude
  * @param lng - Longitude
- * @param forecastDays - Number of days to forecast (default 3)
+ * @param forecastDays - Number of days to forecast (default 14)
  * @returns Array of hourly marine forecast data
  */
 export async function fetchMarineForecast(
   lat: number,
   lng: number,
-  forecastDays: number = 3
+  forecastDays: number = 14
 ): Promise<MarineForecastPoint[]> {
   const params = new URLSearchParams({
     latitude: lat.toString(),
