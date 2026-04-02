@@ -13,12 +13,19 @@ function angleDifference(angle1: number, angle2: number): number {
  * Determine wind quality based on wind direction and optimal offshore direction
  * @param windDirection - Current wind direction in degrees (0-360)
  * @param optimalOffshoreDirection - The break's optimal offshore wind direction in degrees
+ * @param windSpeedKmh - Optional wind speed to detect calm conditions
  * @returns Wind quality classification
  */
 export function calculateWindQuality(
   windDirection: number | null | undefined,
-  optimalOffshoreDirection: number
+  optimalOffshoreDirection: number,
+  windSpeedKmh?: number | null
 ): WindQuality | null {
+  // If wind speed is very low (calm), treat as glassy/offshore conditions
+  if (windSpeedKmh !== undefined && windSpeedKmh !== null && windSpeedKmh < 5) {
+    return 'offshore'; // Calm/glassy conditions are ideal
+  }
+
   if (windDirection === null || windDirection === undefined) {
     return null;
   }

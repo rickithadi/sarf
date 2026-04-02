@@ -44,9 +44,9 @@ export async function GET(
       limit: 4,
     });
 
-    // Calculate wind quality
+    // Calculate wind quality (pass wind speed to detect calm conditions)
     const windQuality = latestObs
-      ? calculateWindQuality(latestObs.windDir, breakData.optimalWindDirection)
+      ? calculateWindQuality(latestObs.windDir, breakData.optimalWindDirection, latestObs.windSpeedKmh)
       : null;
 
     return NextResponse.json({

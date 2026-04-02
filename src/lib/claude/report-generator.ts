@@ -77,9 +77,9 @@ export async function generateSurfReport(breakId: string): Promise<SurfReport | 
     limit: 12,
   });
 
-  // Calculate wind quality
+  // Calculate wind quality (pass wind speed to detect calm conditions)
   const currentWindQuality = latestObservation
-    ? calculateWindQuality(latestObservation.windDir, breakData.optimalWindDirection)
+    ? calculateWindQuality(latestObservation.windDir, breakData.optimalWindDirection, latestObservation.windSpeedKmh)
     : null;
 
   // Build prompt data
@@ -112,7 +112,7 @@ export async function generateSurfReport(breakId: string): Promise<SurfReport | 
       windSpeed: f.windSpeed10m,
       windDirection: degreesToCardinal(f.windDirection10m),
       windQuality: windQualityDescription(
-        calculateWindQuality(f.windDirection10m, breakData.optimalWindDirection)
+        calculateWindQuality(f.windDirection10m, breakData.optimalWindDirection, f.windSpeed10m)
       ),
     })),
   };

@@ -25,12 +25,12 @@ export async function GET() {
           orderBy: [desc(waves.time)],
         });
 
-        // Calculate wind quality
+        // Calculate wind quality (pass wind speed to detect calm conditions)
         const windQuality = latestObs
-          ? calculateWindQuality(latestObs.windDir, b.optimalWindDirection)
+          ? calculateWindQuality(latestObs.windDir, b.optimalWindDirection, latestObs.windSpeedKmh)
           : null;
 
-        // Try to get Claude's rating from cached report first
+        // Get Claude's rating from cached report (falls back to calculated if no cache)
         let rating: number | null = null;
         try {
           const cachedReport = await getCached<SurfReport>(cacheKeys.surfReport(b.id));

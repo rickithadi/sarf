@@ -72,9 +72,9 @@ export async function GET(
       gustKmh: obs.gustKmh,
       windDir: obs.windDir,
       windDirCardinal: degreesToCardinal(obs.windDir),
-      windQuality: calculateWindQuality(obs.windDir, breakData.optimalWindDirection),
+      windQuality: calculateWindQuality(obs.windDir, breakData.optimalWindDirection, obs.windSpeedKmh),
       windQualityDescription: windQualityDescription(
-        calculateWindQuality(obs.windDir, breakData.optimalWindDirection)
+        calculateWindQuality(obs.windDir, breakData.optimalWindDirection, obs.windSpeedKmh)
       ),
       pressure: obs.pressure,
       humidity: obs.humidity,
@@ -87,9 +87,9 @@ export async function GET(
       windGusts10m: f.windGusts10m,
       windDirection10m: f.windDirection10m,
       windDirCardinal: degreesToCardinal(f.windDirection10m),
-      windQuality: calculateWindQuality(f.windDirection10m, breakData.optimalWindDirection),
+      windQuality: calculateWindQuality(f.windDirection10m, breakData.optimalWindDirection, f.windSpeed10m),
       windQualityDescription: windQualityDescription(
-        calculateWindQuality(f.windDirection10m, breakData.optimalWindDirection)
+        calculateWindQuality(f.windDirection10m, breakData.optimalWindDirection, f.windSpeed10m)
       ),
       precipitation: f.precipitation,
     }));
