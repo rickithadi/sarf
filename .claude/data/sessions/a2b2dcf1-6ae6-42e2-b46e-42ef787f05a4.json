@@ -1,6 +1,0 @@
-{
-  "session_id": "a2b2dcf1-6ae6-42e2-b46e-42ef787f05a4",
-  "prompts": [
-    "how do i make this codebase work with a supabase connection string instead of local postgres"
-  ]
-}
