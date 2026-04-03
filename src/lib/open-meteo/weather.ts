@@ -63,13 +63,13 @@ export interface WeatherForecastResult {
  * Fetch weather forecast from Open-Meteo API
  * @param lat - Latitude
  * @param lng - Longitude
- * @param forecastDays - Number of days to forecast (default 14)
+ * @param forecastDays - Number of days to forecast (default 10)
  * @returns Array of hourly forecast data
  */
 export async function fetchWeatherForecast(
   lat: number,
   lng: number,
-  forecastDays: number = 14
+  forecastDays: number = 10
 ): Promise<WeatherForecastPoint[]> {
   const result = await fetchWeatherForecastFull(lat, lng, forecastDays);
   return result.hourly;
@@ -81,7 +81,7 @@ export async function fetchWeatherForecast(
 export async function fetchWeatherForecastFull(
   lat: number,
   lng: number,
-  forecastDays: number = 14
+  forecastDays: number = 10
 ): Promise<WeatherForecastResult> {
   const params = new URLSearchParams({
     latitude: lat.toString(),
@@ -138,6 +138,10 @@ export async function fetchWeatherForecastFull(
           uvIndexMax: daily.uv_index_max[i],
         });
       }
+    }
+
+    if (hourlyForecasts.length > 0) {
+      console.log(`[Weather API] Returned ${hourlyForecasts.length} hours from ${hourlyForecasts[0].time.toISOString()} to ${hourlyForecasts[hourlyForecasts.length - 1].time.toISOString()}`);
     }
 
     return { hourly: hourlyForecasts, daily: dailyData };

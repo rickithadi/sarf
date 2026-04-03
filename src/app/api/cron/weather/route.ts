@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
 
     // Fetch weather forecast for each break
     for (const b of allBreaks) {
-      const forecast = await fetchWeatherForecast(b.lat, b.lng, 14);
+      const forecast = await fetchWeatherForecast(b.lat, b.lng, 10);
+      console.log(`[Weather Cron] Break ${b.id}: Got ${forecast.length} forecast points`);
 
       if (forecast.length === 0) {
         results.push({ breakId: b.id, success: false, error: 'No forecast data' });

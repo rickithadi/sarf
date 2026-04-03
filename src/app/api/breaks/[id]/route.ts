@@ -26,7 +26,7 @@ export async function GET(
 
     const now = new Date();
     const todayStart = startOfDay(now);
-    const fourteenDaysLater = addDays(now, 14);
+    const tenDaysLater = addDays(now, 10);
 
     // Get latest observation
     const latestObs = await db.query.observations.findFirst({
@@ -40,25 +40,27 @@ export async function GET(
       orderBy: [asc(waves.time)],
     });
 
-    // Get 14-day wave forecast (include full day's data from start of today)
+    // Get 10-day wave forecast (include full day's data from start of today)
     const waveForecast = await db.query.waves.findMany({
       where: and(
         eq(waves.breakId, id),
         gte(waves.time, todayStart),
-        lte(waves.time, fourteenDaysLater)
+        lte(waves.time, tenDaysLater)
       ),
       orderBy: [asc(waves.time)],
     });
+    console.log(`[Break API] Wave forecast: ${waveForecast.length} records from DB`);
 
-    // Get 14-day weather forecast (include full day's data from start of today)
+    // Get 10-day weather forecast (include full day's data from start of today)
     const weatherForecast = await db.query.weatherForecasts.findMany({
       where: and(
         eq(weatherForecasts.breakId, id),
         gte(weatherForecasts.time, todayStart),
-        lte(weatherForecasts.time, fourteenDaysLater)
+        lte(weatherForecasts.time, tenDaysLater)
       ),
       orderBy: [asc(weatherForecasts.time)],
     });
+    console.log(`[Break API] Weather forecast: ${weatherForecast.length} records from DB`);
 
     // Get upcoming tides
     const upcomingTides = await db.query.tides.findMany({
@@ -74,6 +76,7 @@ export async function GET(
 
     // Merge wave and weather forecast data by time
     const hourlyForecast = mergeHourlyData(waveForecast, weatherForecast, breakData.optimalWindDirection);
+    console.log(`[Break API] Merged hourly: ${hourlyForecast.length} records`);
 
     // Get all breaks for nearby spots
     const allBreaks = await db.select().from(breaks);

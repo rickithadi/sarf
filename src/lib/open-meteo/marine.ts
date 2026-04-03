@@ -41,13 +41,13 @@ export interface MarineForecastPoint {
  * Fetch marine/wave forecast from Open-Meteo Marine API
  * @param lat - Latitude
  * @param lng - Longitude
- * @param forecastDays - Number of days to forecast (default 14)
+ * @param forecastDays - Number of days to forecast (default 10)
  * @returns Array of hourly marine forecast data
  */
 export async function fetchMarineForecast(
   lat: number,
   lng: number,
-  forecastDays: number = 14
+  forecastDays: number = 10
 ): Promise<MarineForecastPoint[]> {
   const params = new URLSearchParams({
     latitude: lat.toString(),
@@ -90,6 +90,15 @@ export async function fetchMarineForecast(
         swellWavePeriod: hourly.swell_wave_period[i],
         swellWaveDirection: hourly.swell_wave_direction[i],
       });
+    }
+
+    if (forecasts.length > 0) {
+      console.log(`[Marine API] Returned ${forecasts.length} hours from ${forecasts[0].time.toISOString()} to ${forecasts[forecasts.length - 1].time.toISOString()}`);
+      // Log null counts to detect API data gaps
+      const nullCount = forecasts.filter(f => f.waveHeight === null).length;
+      if (nullCount > 0) {
+        console.log(`[Marine API] WARNING: ${nullCount}/${forecasts.length} hours have null waveHeight`);
+      }
     }
 
     return forecasts;

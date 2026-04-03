@@ -226,7 +226,7 @@ export function BreakDetailClient({ detail, report }: BreakDetailClientProps) {
           {/* 14-Day Forecast */}
           <section>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">14-Day Forecast</h2>
+              <h2 className="text-lg font-semibold text-gray-900">10-Day Forecast</h2>
               {selectedForecastDate && (
                 <button
                   onClick={() => setSelectedForecastDate(null)}
