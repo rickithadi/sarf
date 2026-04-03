@@ -5,6 +5,7 @@ interface BreakData {
   name: string;
   region: string;
   rating: number | null;
+  reportGeneratedAt: string | null;
   currentConditions: {
     airTemp: number | null;
     windSpeedKmh: number | null;

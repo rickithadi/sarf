@@ -12,9 +12,10 @@ const globalForDb = globalThis as unknown as {
 const client =
   globalForDb.client ??
   postgres(connectionString, {
-    max: 10, // Maximum connections in pool
-    idle_timeout: 20, // Close idle connections after 20 seconds
-    connect_timeout: 10, // Connection timeout in seconds
+    max: 1, // Serverless: 1 connection per function invocation
+    idle_timeout: 20,
+    connect_timeout: 10,
+    prepare: false, // Required for Supabase connection pooler
   });
 
 if (process.env.NODE_ENV !== 'production') {

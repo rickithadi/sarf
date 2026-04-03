@@ -9,7 +9,7 @@ import { FavoriteButton } from '@/components/ui/favorites';
 import { UnitSelector, useUnit } from '@/components/ui/unit-toggle';
 import { WindDisplay } from '@/components/ui/wind-arrow';
 import { SwellDisplay } from '@/components/ui/swell-arrow';
-import { MultidayForecast, type HourlyForecastData } from '@/components/forecast';
+import { MultidayForecast, HorizontalForecastStrip, type HourlyForecastData } from '@/components/forecast';
 import { WaveChart } from '@/components/forecast/wave-chart';
 import { NearbySpots, calculateDistance } from '@/components/breaks/nearby-spots';
 import {
@@ -93,6 +93,7 @@ interface BreakDetailClientProps {
 
 export function BreakDetailClient({ detail, report }: BreakDetailClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>('report');
+  const [selectedForecastDate, setSelectedForecastDate] = useState<Date | null>(null);
   const { unit } = useUnit();
 
   const { break: breakData, currentConditions, waveData, hourlyForecast = [], tides = [], nearbySpots = [] } = detail;
@@ -224,14 +225,40 @@ export function BreakDetailClient({ detail, report }: BreakDetailClientProps) {
 
           {/* 14-Day Forecast */}
           <section>
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">14-Day Forecast</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">14-Day Forecast</h2>
+              {selectedForecastDate && (
+                <button
+                  onClick={() => setSelectedForecastDate(null)}
+                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                  </svg>
+                  Show all days
+                </button>
+              )}
+            </div>
             {hourlyData.length > 0 ? (
-              <MultidayForecast
-                allData={hourlyData}
-                optimalWindDirection={breakData.optimalWindDirection}
-                unit={unit}
-                expandFirstDay
-              />
+              <>
+                {/* Horizontal scrolling day strip */}
+                <HorizontalForecastStrip
+                  allData={hourlyData}
+                  optimalWindDirection={breakData.optimalWindDirection}
+                  unit={unit}
+                  selectedDate={selectedForecastDate ?? undefined}
+                  onSelectDate={setSelectedForecastDate}
+                  className="mb-4"
+                />
+                {/* Detailed day forecast */}
+                <MultidayForecast
+                  allData={hourlyData}
+                  optimalWindDirection={breakData.optimalWindDirection}
+                  unit={unit}
+                  expandFirstDay
+                  selectedDate={selectedForecastDate ?? undefined}
+                />
+              </>
             ) : (
               <p className="text-gray-400">No forecast data available</p>
             )}

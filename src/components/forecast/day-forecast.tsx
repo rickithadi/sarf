@@ -228,6 +228,7 @@ interface MultidayForecastProps {
   optimalWindDirection: number;
   unit?: UnitSystem;
   expandFirstDay?: boolean;
+  selectedDate?: Date;
   className?: string;
 }
 
@@ -236,14 +237,22 @@ export function MultidayForecast({
   optimalWindDirection,
   unit = 'imperial',
   expandFirstDay = true,
+  selectedDate,
   className,
 }: MultidayForecastProps) {
   // Group data by day
   const dayGroups = groupByDay(allData);
 
+  // Filter to selected date if provided
+  const filteredGroups = selectedDate
+    ? dayGroups.filter(
+        (g) => startOfDay(g.date).getTime() === startOfDay(selectedDate).getTime()
+      )
+    : dayGroups;
+
   return (
     <div className={cn('space-y-3', className)}>
-      {dayGroups.map((group, i) => (
+      {filteredGroups.map((group, i) => (
         <DayForecast
           key={group.date.toISOString()}
           date={group.date}

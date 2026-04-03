@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns';
 import { RatingBadge } from '@/components/ui/rating-badge';
 import { FavoriteButton } from '@/components/ui/favorites';
 import { WindArrow } from '@/components/ui/wind-arrow';
@@ -13,6 +14,7 @@ interface BreakCardProps {
   name: string;
   region: string;
   rating: number | null;
+  reportGeneratedAt?: string | null;
   currentConditions: {
     airTemp: number | null;
     windSpeedKmh: number | null;
@@ -55,6 +57,7 @@ export function BreakCard({
   name,
   region,
   rating,
+  reportGeneratedAt,
   currentConditions,
   waveData,
 }: BreakCardProps) {
@@ -73,7 +76,14 @@ export function BreakCard({
             <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
             <p className="text-sm text-gray-500">{region}</p>
           </div>
-          <RatingBadge rating={rating} />
+          <div className="text-right">
+            <RatingBadge rating={rating} />
+            {reportGeneratedAt && (
+              <p className="mt-1 text-xs text-gray-400">
+                {formatDistanceToNow(new Date(reportGeneratedAt), { addSuffix: true })}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Wave height highlight */}

@@ -11,6 +11,7 @@ interface BreakData {
   name: string;
   region: string;
   rating: number | null;
+  reportGeneratedAt: string | null;
   currentConditions: {
     airTemp: number | null;
     windSpeedKmh: number | null;
@@ -98,6 +99,7 @@ export function HomePageClient({ breaks }: HomePageClientProps) {
                     name={b.name}
                     region={b.region}
                     rating={b.rating}
+                    reportGeneratedAt={b.reportGeneratedAt}
                     currentConditions={b.currentConditions}
                     waveData={b.waveData}
                   />

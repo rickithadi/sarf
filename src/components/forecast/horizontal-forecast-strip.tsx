@@ -186,11 +186,11 @@ function groupAndSummarize(
 
   const result: DayData[] = [];
 
-  for (const [dayKey, hourlyData] of groups) {
+  for (const [dayKey, hourlyData] of Array.from(groups.entries())) {
     const date = new Date(dayKey);
 
     // Filter to daylight hours for calculations
-    const dayHours = hourlyData.filter((d) => {
+    const dayHours = hourlyData.filter((d: HourlyForecastData) => {
       const hour = d.time.getHours();
       return hour >= 6 && hour <= 18;
     });
@@ -217,7 +217,7 @@ function groupAndSummarize(
     const hourlyRatings: DayData['hourlyRatings'] = [];
 
     for (const targetHour of sampleHours) {
-      const hourData = dayHours.find((d) => d.time.getHours() === targetHour);
+      const hourData = dayHours.find((d: HourlyForecastData) => d.time.getHours() === targetHour);
       if (hourData) {
         const windQuality = calculateWindQuality(
           hourData.windDirection,
@@ -236,8 +236,8 @@ function groupAndSummarize(
 
     // Get dominant wind directions (sample throughout day)
     const windDirections = dayHours
-      .filter((d) => d.windDirection !== null)
-      .map((d) => d.windDirection!);
+      .filter((d: HourlyForecastData) => d.windDirection !== null)
+      .map((d: HourlyForecastData) => d.windDirection!);
 
     // Calculate average rating
     const avgRating = hourlyRatings.length > 0

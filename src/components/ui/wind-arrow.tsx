@@ -6,7 +6,7 @@ import type { WindQuality } from '@/lib/breaks/wind-quality';
 interface WindArrowProps {
   direction: number | null;
   quality?: WindQuality | null;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   className?: string;
 }
@@ -45,6 +45,7 @@ export function WindArrow({
   };
 
   const sizeClasses = {
+    xs: 'w-3 h-3',
     sm: 'w-4 h-4',
     md: 'w-5 h-5',
     lg: 'w-6 h-6',
@@ -90,7 +91,7 @@ interface WindDisplayProps {
   speedKmh: number | null;
   quality?: WindQuality | null;
   unit?: 'kmh' | 'kts';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   className?: string;
 }
 
