@@ -39,6 +39,16 @@ export async function GET(request: NextRequest) {
           swellWaveDirection: f.swellWaveDirection,
         }));
 
+        // Debug: Log first value to verify data
+        if (values.length > 0) {
+          console.log(`[Waves Cron] Break ${b.id} sample data:`, {
+            waveHeight: values[0].waveHeight,
+            wavePeriod: values[0].wavePeriod,
+            swellWaveHeight: values[0].swellWaveHeight,
+            swellWavePeriod: values[0].swellWavePeriod,
+          });
+        }
+
         // Use upsert to handle duplicate timestamps
         for (const value of values) {
           await db

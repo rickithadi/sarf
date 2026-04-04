@@ -1,3 +1,8 @@
+import {
+  calculateSwellQuality,
+  type SwellQuality,
+} from '@/lib/utils/wave-quality';
+
 export type WindQuality = 'offshore' | 'cross-offshore' | 'cross-shore' | 'cross-onshore' | 'onshore';
 
 /**
@@ -78,6 +83,15 @@ export function windQualityScore(quality: WindQuality | null): number {
 
 /**
  * Calculate comprehensive surf rating (1-5) based on all conditions
+ *
+ * Enhanced weighting system:
+ * - Wind quality: 30% (was 35%)
+ * - Wind speed: 10% (was 15%)
+ * - Wave height: 25% (was 35%)
+ * - Swell quality: 35% (NEW - combines period + steepness)
+ *
+ * The swell quality factor gives more weight to wave period and steepness,
+ * which are crucial indicators of surf quality.
  */
 export function calculateSurfRating(params: {
   windQuality: WindQuality | null;
@@ -95,14 +109,14 @@ export function calculateSurfRating(params: {
   let score = 0;
   let factors = 0;
 
-  // Wind quality score (0-5 points, weight: 35%)
+  // Wind quality score (0-5 points, weight: 30%)
   if (windQuality) {
     const windScore = windQualityScore(windQuality);
-    score += windScore * 0.35;
-    factors += 0.35;
+    score += windScore * 0.30;
+    factors += 0.30;
   }
 
-  // Wind speed score (0-5 points, weight: 15%)
+  // Wind speed score (0-5 points, weight: 10%)
   // Ideal: 5-20 km/h, Poor: >35 km/h or <3 km/h
   if (windSpeedKmh !== null) {
     let speedScore = 3; // Default average
@@ -117,11 +131,11 @@ export function calculateSurfRating(params: {
     } else if (windSpeedKmh < 3) {
       speedScore = 4; // Glassy but might lack push
     }
-    score += speedScore * 0.15;
-    factors += 0.15;
+    score += speedScore * 0.10;
+    factors += 0.10;
   }
 
-  // Wave height score (0-5 points, weight: 35%)
+  // Wave height score (0-5 points, weight: 25%)
   // Ideal: 0.8-2m for most breaks
   if (waveHeight !== null) {
     let heightScore = 3;
@@ -138,27 +152,16 @@ export function calculateSurfRating(params: {
     } else if (waveHeight < 0.5) {
       heightScore = 1; // Too small
     }
-    score += heightScore * 0.35;
-    factors += 0.35;
+    score += heightScore * 0.25;
+    factors += 0.25;
   }
 
-  // Wave period score (0-5 points, weight: 15%)
-  // Longer periods = better quality waves
-  if (wavePeriod !== null) {
-    let periodScore = 3;
-    if (wavePeriod >= 12) {
-      periodScore = 5; // Excellent groundswell
-    } else if (wavePeriod >= 10) {
-      periodScore = 4; // Good swell
-    } else if (wavePeriod >= 8) {
-      periodScore = 3; // Average
-    } else if (wavePeriod >= 6) {
-      periodScore = 2; // Short period windswell
-    } else {
-      periodScore = 1; // Choppy
-    }
-    score += periodScore * 0.15;
-    factors += 0.15;
+  // Swell quality score (0-5 points, weight: 35%)
+  // Combines period and steepness for better quality assessment
+  const swellQuality = calculateSwellQuality(waveHeight, wavePeriod);
+  if (swellQuality) {
+    score += swellQuality.score * 0.35;
+    factors += 0.35;
   }
 
   // Normalize and round to nearest integer 1-5
@@ -166,6 +169,22 @@ export function calculateSurfRating(params: {
 
   const normalizedScore = score / factors;
   return Math.max(1, Math.min(5, Math.round(normalizedScore)));
+}
+
+/**
+ * Calculate surf rating with swell quality details
+ * Returns both the rating and the swell quality breakdown
+ */
+export function calculateSurfRatingWithDetails(params: {
+  windQuality: WindQuality | null;
+  windSpeedKmh: number | null;
+  waveHeight: number | null;
+  wavePeriod: number | null;
+}): { rating: number | null; swellQuality: SwellQuality | null } {
+  const rating = calculateSurfRating(params);
+  const swellQuality = calculateSwellQuality(params.waveHeight, params.wavePeriod);
+
+  return { rating, swellQuality };
 }
 
 /**

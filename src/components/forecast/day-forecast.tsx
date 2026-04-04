@@ -4,9 +4,13 @@ import { useState } from 'react';
 import { format, isToday, isTomorrow, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { DayRating } from '@/components/ui/day-rating';
+// UI components available but hidden for simplified view
+// import { DateConfidenceBadge } from '@/components/ui/confidence-indicator';
+// import { SwellTypeBadge } from '@/components/ui/swell-quality-badge';
 import { HourlyTable, CompactHourlyRow, type HourlyForecastData } from './hourly-table';
 import { formatSurfRange, type UnitSystem } from '@/lib/utils/units';
 import { calculateWindQuality, calculateSurfRating, type WindQuality } from '@/lib/breaks/wind-quality';
+import { classifySwellType, type SwellType } from '@/lib/utils/wave-quality';
 
 interface DayForecastProps {
   date: Date;
@@ -36,9 +40,10 @@ function getDaySummary(
   bestSurf: { range: string; time: Date } | null;
   avgRating: number;
   bestWindQuality: WindQuality | null;
+  dominantSwellType: SwellType | null;
 } {
   if (hourlyData.length === 0) {
-    return { bestSurf: null, avgRating: 0, bestWindQuality: null };
+    return { bestSurf: null, avgRating: 0, bestWindQuality: null, dominantSwellType: null };
   }
 
   // Filter to daylight hours (6am - 6pm)
@@ -48,7 +53,7 @@ function getDaySummary(
   });
 
   if (dayHours.length === 0) {
-    return { bestSurf: null, avgRating: 0, bestWindQuality: null };
+    return { bestSurf: null, avgRating: 0, bestWindQuality: null, dominantSwellType: null };
   }
 
   // Find best wave height
@@ -94,7 +99,13 @@ function getDaySummary(
 
   const avgRating = ratingCount > 0 ? totalRating / ratingCount : 0;
 
-  return { bestSurf, avgRating, bestWindQuality };
+  // Get dominant swell type (most common or from peak wave height)
+  const swellTypes = dayHours
+    .filter((h) => h.swellPeriod !== null)
+    .map((h) => classifySwellType(h.swellPeriod));
+  const dominantSwellType = swellTypes.length > 0 ? swellTypes[Math.floor(swellTypes.length / 2)] : null;
+
+  return { bestSurf, avgRating, bestWindQuality, dominantSwellType };
 }
 
 function getWindScore(quality: WindQuality | null): number {

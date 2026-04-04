@@ -113,9 +113,26 @@ export function formatTemperature(
 }
 
 /**
+ * Calculate wave steepness for variance determination
+ * Steepness = Hs / wavelength, where wavelength ≈ 1.56 × Tp²
+ */
+function calculateSteepnessForVariance(
+  heightMeters: number,
+  periodSeconds: number | null
+): number | null {
+  if (periodSeconds === null || periodSeconds === 0) return null;
+  const wavelength = 1.56 * Math.pow(periodSeconds, 2);
+  return heightMeters / wavelength;
+}
+
+/**
  * Calculate surf height range based on wave height and period
- * Longer period swells tend to have more consistent heights,
- * while shorter period wind swells can be more variable.
+ *
+ * Uses wave steepness to determine variance (steeper = more variable):
+ * - Low steepness (<0.025): ±12% - very consistent ground swell
+ * - Average (0.025-0.04): ±20% - average consistency
+ * - Steep (0.04-0.055): ±30% - variable wind swell
+ * - Very steep (>0.055): ±40% - highly variable chop
  *
  * @param waveHeightMeters - Wave height in meters
  * @param wavePeriod - Wave period in seconds
@@ -127,13 +144,23 @@ export function calculateSurfRange(
 ): { min: number; max: number } | null {
   if (waveHeightMeters === null) return null;
 
-  // Variance factor based on period (shorter period = more variance)
-  // Long period swell (12s+): ±15% variance
-  // Medium period (8-12s): ±20% variance
-  // Short period (<8s): ±30% variance
-  let varianceFactor = 0.25; // default
+  const steepness = calculateSteepnessForVariance(waveHeightMeters, wavePeriod);
 
-  if (wavePeriod !== null) {
+  // Variance factor based on steepness (steeper = more variance)
+  let varianceFactor = 0.25; // default when no period
+
+  if (steepness !== null) {
+    if (steepness < 0.025) {
+      varianceFactor = 0.12; // Very consistent ground swell
+    } else if (steepness < 0.04) {
+      varianceFactor = 0.20; // Average consistency
+    } else if (steepness < 0.055) {
+      varianceFactor = 0.30; // Variable wind swell
+    } else {
+      varianceFactor = 0.40; // Highly variable chop
+    }
+  } else if (wavePeriod !== null) {
+    // Fallback to period-based variance if steepness calc fails
     if (wavePeriod >= 12) {
       varianceFactor = 0.15;
     } else if (wavePeriod >= 8) {
@@ -143,10 +170,9 @@ export function calculateSurfRange(
     }
   }
 
-  const variance = waveHeightMeters * varianceFactor;
   return {
-    min: Math.max(0, waveHeightMeters - variance),
-    max: waveHeightMeters + variance,
+    min: Math.max(0, waveHeightMeters * (1 - varianceFactor)),
+    max: waveHeightMeters * (1 + varianceFactor),
   };
 }
 

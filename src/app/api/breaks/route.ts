@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { breaks, observations, waves } from '@/lib/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
 import { calculateWindQuality } from '@/lib/breaks/wind-quality';
 import { getCached, cacheKeys } from '@/lib/cache/redis';
 import { SurfReportWithTimestamp } from '@/lib/claude/report-generator';
@@ -11,6 +11,8 @@ export async function GET() {
     // Fetch all breaks with their latest conditions
     const allBreaks = await db.select().from(breaks);
 
+    const now = new Date();
+
     const breaksWithRatings = await Promise.all(
       allBreaks.map(async (b) => {
         // Get latest observation
@@ -19,11 +21,18 @@ export async function GET() {
           orderBy: [desc(observations.time)],
         });
 
-        // Get latest wave data
-        const latestWave = await db.query.waves.findFirst({
-          where: eq(waves.breakId, b.id),
+        // Use the freshest wave reading at or before "now"; fallback to future forecast if needed
+        const currentWave = await db.query.waves.findFirst({
+          where: and(eq(waves.breakId, b.id), lte(waves.time, now)),
           orderBy: [desc(waves.time)],
         });
+
+        const latestWave =
+          currentWave ||
+          (await db.query.waves.findFirst({
+            where: and(eq(waves.breakId, b.id), gte(waves.time, now)),
+            orderBy: [asc(waves.time)],
+          }));
 
         // Calculate wind quality (pass wind speed to detect calm conditions)
         const windQuality = latestObs
@@ -64,9 +73,9 @@ export async function GET() {
             : null,
           waveData: latestWave
             ? {
-                height: latestWave.waveHeight,
-                period: latestWave.wavePeriod,
-                direction: latestWave.waveDirection,
+                height: latestWave.waveHeight ?? latestWave.swellWaveHeight,
+                period: latestWave.wavePeriod ?? latestWave.swellWavePeriod,
+                direction: latestWave.waveDirection ?? latestWave.swellWaveDirection,
               }
             : null,
         };

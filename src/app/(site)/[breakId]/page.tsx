@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { BreakDetailClient } from './client';
+import type { GridData } from '@/app/api/map/grid/route';
 
 interface BreakDetail {
   break: {
@@ -90,6 +91,19 @@ async function getBreakDetail(breakId: string): Promise<BreakDetail | null> {
   }
 }
 
+async function getGridData(): Promise<GridData | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  try {
+    const res = await fetch(`${baseUrl}/api/map/grid`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
 async function getSurfReport(breakId: string): Promise<SurfReport | null> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
@@ -118,9 +132,11 @@ export default async function BreakDetailPage({
   params: Promise<{ breakId: string }>;
 }) {
   const { breakId } = await params;
-  const [detail, report] = await Promise.all([
+  const mapEnabled = process.env.NEXT_PUBLIC_ENABLE_MAP === 'true';
+  const [detail, report, gridData] = await Promise.all([
     getBreakDetail(breakId),
     getSurfReport(breakId),
+    mapEnabled ? getGridData() : null,
   ]);
 
   if (!detail) {
@@ -131,6 +147,7 @@ export default async function BreakDetailPage({
     <BreakDetailClient
       detail={detail}
       report={report}
+      gridData={gridData}
     />
   );
 }

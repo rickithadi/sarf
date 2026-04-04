@@ -5,9 +5,11 @@ import { formatDistanceToNow } from 'date-fns';
 import { RatingBadge } from '@/components/ui/rating-badge';
 import { FavoriteButton } from '@/components/ui/favorites';
 import { WindArrow } from '@/components/ui/wind-arrow';
+import { SwellTypeBadge, WavePowerBadge } from '@/components/ui/swell-quality-badge';
 import { useUnit } from '@/components/ui/unit-toggle';
 import { formatSurfRange, formatWindSpeed, formatTemperature } from '@/lib/utils/units';
 import { WindQuality } from '@/lib/breaks/wind-quality';
+import { classifySwellType, calculateWavePower } from '@/lib/utils/wave-quality';
 
 interface BreakCardProps {
   id: string;
@@ -89,9 +91,13 @@ export function BreakCard({
         {/* Wave height highlight */}
         {waveData && waveData.height !== null && (
           <div className="mt-3">
-            <span className="text-2xl font-bold text-blue-600">
-              {formatSurfRange(waveData.height, waveData.period, unit)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-blue-600">
+                {formatSurfRange(waveData.height, waveData.period, unit)}
+              </span>
+              <SwellTypeBadge type={classifySwellType(waveData.period)} size="sm" />
+              <WavePowerBadge level={calculateWavePower(waveData.height, waveData.period)?.level ?? null} size="sm" />
+            </div>
           </div>
         )}
 

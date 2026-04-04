@@ -9,8 +9,12 @@ import { FavoriteButton } from '@/components/ui/favorites';
 import { UnitSelector, useUnit } from '@/components/ui/unit-toggle';
 import { WindDisplay } from '@/components/ui/wind-arrow';
 import { SwellDisplay } from '@/components/ui/swell-arrow';
-import { MultidayForecast, HorizontalForecastStrip, type HourlyForecastData } from '@/components/forecast';
+// Wave quality UI components available but hidden for now
+// import { SwellTypeBadge, WavePowerIndicator, ConsistencyBadge, SetWaveEstimateCompact } from '@/components/ui/swell-quality-badge';
+import { MultidayForecast, HorizontalForecastStrip, SimplifiedForecast, type HourlyForecastData } from '@/components/forecast';
 import { WaveChart } from '@/components/forecast/wave-chart';
+import { SwellChart } from '@/components/forecast/swell-chart';
+import { ConditionsOverview } from '@/components/forecast/conditions-overview';
 import { NearbySpots, calculateDistance } from '@/components/breaks/nearby-spots';
 import {
   formatSurfRange,
@@ -19,6 +23,10 @@ import {
   formatTemperature,
 } from '@/lib/utils/units';
 import type { WindQuality } from '@/lib/breaks/wind-quality';
+// Wave quality calculations available but hidden for now
+// import { analyzeWave, classifySwellType, calculateSetWaveEstimate } from '@/lib/utils/wave-quality';
+import { MeteoMap } from '@/components/map/MeteoMap';
+import type { GridData } from '@/app/api/map/grid/route';
 
 type TabType = 'report' | 'charts' | 'guide';
 
@@ -89,9 +97,10 @@ interface BreakDetailClientProps {
     bestTime: string;
     generatedAt?: string;
   } | null;
+  gridData: GridData | null;
 }
 
-export function BreakDetailClient({ detail, report }: BreakDetailClientProps) {
+export function BreakDetailClient({ detail, report, gridData }: BreakDetailClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>('report');
   const [selectedForecastDate, setSelectedForecastDate] = useState<Date | null>(null);
   const { unit } = useUnit();
@@ -223,42 +232,61 @@ export function BreakDetailClient({ detail, report }: BreakDetailClientProps) {
             </section>
           )}
 
-          {/* 14-Day Forecast */}
+          {/* 10-Day Forecast */}
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">10-Day Forecast</h2>
-              {selectedForecastDate && (
-                <button
-                  onClick={() => setSelectedForecastDate(null)}
-                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                  </svg>
-                  Show all days
-                </button>
-              )}
+              <button
+                onClick={() => setSelectedForecastDate(selectedForecastDate ? null : new Date())}
+                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                {selectedForecastDate ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    Simple View
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                    Detailed View
+                  </>
+                )}
+              </button>
             </div>
             {hourlyData.length > 0 ? (
-              <>
-                {/* Horizontal scrolling day strip */}
-                <HorizontalForecastStrip
-                  allData={hourlyData}
+              selectedForecastDate ? (
+                <>
+                  {/* Day selector strip */}
+                  <HorizontalForecastStrip
+                    allData={hourlyData}
+                    optimalWindDirection={breakData.optimalWindDirection}
+                    unit={unit}
+                    selectedDate={selectedForecastDate}
+                    onSelectDate={setSelectedForecastDate}
+                    className="mb-4"
+                  />
+                  {/* Detailed day forecast */}
+                  <MultidayForecast
+                    allData={hourlyData}
+                    optimalWindDirection={breakData.optimalWindDirection}
+                    unit={unit}
+                    expandFirstDay
+                    selectedDate={selectedForecastDate}
+                  />
+                </>
+              ) : (
+                /* Simplified visual forecast - default view */
+                <SimplifiedForecast
+                  data={hourlyData}
+                  tides={tides}
                   optimalWindDirection={breakData.optimalWindDirection}
                   unit={unit}
-                  selectedDate={selectedForecastDate ?? undefined}
-                  onSelectDate={setSelectedForecastDate}
-                  className="mb-4"
                 />
-                {/* Detailed day forecast */}
-                <MultidayForecast
-                  allData={hourlyData}
-                  optimalWindDirection={breakData.optimalWindDirection}
-                  unit={unit}
-                  expandFirstDay
-                  selectedDate={selectedForecastDate ?? undefined}
-                />
-              </>
+              )
             ) : (
               <p className="text-gray-400">No forecast data available</p>
             )}
@@ -402,6 +430,21 @@ export function BreakDetailClient({ detail, report }: BreakDetailClientProps) {
 
       {activeTab === 'charts' && (
         <div className="space-y-6">
+          {/* Meteorological Map */}
+          {gridData && process.env.NEXT_PUBLIC_MAPBOX_TOKEN && (
+            <section className="rounded-lg border border-gray-200 overflow-hidden">
+              <MeteoMap
+                gridData={gridData}
+                breaks={[{ id: breakData.id, name: breakData.name, lat: breakData.lat, lng: breakData.lng }]}
+                initialBounds={{
+                  sw: [breakData.lat - 3, breakData.lng - 4],
+                  ne: [breakData.lat + 3, breakData.lng + 4],
+                }}
+                height="380px"
+              />
+            </section>
+          )}
+
           {/* Wave Height Chart */}
           <section className="rounded-lg border border-gray-200 bg-white p-6">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Wave Height Forecast</h2>
@@ -412,29 +455,48 @@ export function BreakDetailClient({ detail, report }: BreakDetailClientProps) {
             )}
           </section>
 
-          {/* Swell Period Info */}
+          {/* Swell Analysis Chart */}
           <section className="rounded-lg border border-gray-200 bg-white p-6">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Swell Analysis</h2>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-blue-600">
-                  {waveData?.swellPeriod ? `${Math.round(waveData.swellPeriod)}s` : 'N/A'}
-                </p>
-                <p className="text-sm text-gray-500">Primary Swell Period</p>
+            {hourlyData.length > 0 ? (
+              <SwellChart data={hourlyData} unit={unit} />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {waveData?.swellPeriod ? `${Math.round(waveData.swellPeriod)}s` : 'N/A'}
+                  </p>
+                  <p className="text-sm text-gray-500">Primary Swell Period</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {waveData?.swellHeight ? formatWaveHeight(waveData.swellHeight, unit) : 'N/A'}
+                  </p>
+                  <p className="text-sm text-gray-500">Primary Swell Height</p>
+                </div>
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {waveData?.swellDirectionCardinal ?? 'N/A'}
+                  </p>
+                  <p className="text-sm text-gray-500">Swell Direction</p>
+                </div>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-blue-600">
-                  {waveData?.swellHeight ? formatWaveHeight(waveData.swellHeight, unit) : 'N/A'}
-                </p>
-                <p className="text-sm text-gray-500">Primary Swell Height</p>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-blue-600">
-                  {waveData?.swellDirectionCardinal ?? 'N/A'}
-                </p>
-                <p className="text-sm text-gray-500">Swell Direction</p>
-              </div>
-            </div>
+            )}
+          </section>
+
+          {/* Conditions Overview */}
+          <section className="rounded-lg border border-gray-200 bg-white p-6">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">Conditions Overview</h2>
+            {hourlyData.length > 0 ? (
+              <ConditionsOverview
+                hourlyData={hourlyData}
+                tides={tides}
+                optimalWindDirection={breakData.optimalWindDirection}
+                unit={unit}
+              />
+            ) : (
+              <p className="text-gray-400">No forecast data available</p>
+            )}
           </section>
         </div>
       )}

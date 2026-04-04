@@ -4,8 +4,10 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { WindArrow } from '@/components/ui/wind-arrow';
 import { SwellArrow } from '@/components/ui/swell-arrow';
+// UI hidden for simplified view: import { SwellTypeDot } from '@/components/ui/swell-quality-badge';
 import { formatSurfRange, formatWaveHeight, formatWindSpeed, type UnitSystem } from '@/lib/utils/units';
 import { degreesToCardinal, type WindQuality, calculateWindQuality } from '@/lib/breaks/wind-quality';
+// Calculations available: import { classifySwellType } from '@/lib/utils/wave-quality';
 
 export interface HourlyForecastData {
   time: Date;

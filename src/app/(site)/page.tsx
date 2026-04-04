@@ -1,9 +1,31 @@
 import { HomePageClient } from './client';
+import { MeteoMap } from '@/components/map/MeteoMap';
+import type { GridData } from '@/app/api/map/grid/route';
+
+const VICTORIA_BOUNDS = {
+  sw: [-42, 138] as [number, number],
+  ne: [-34, 151] as [number, number],
+};
+
+async function getGridData(): Promise<GridData | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  try {
+    const res = await fetch(`${baseUrl}/api/map/grid`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
 
 interface BreakData {
   id: string;
   name: string;
   region: string;
+  lat: number;
+  lng: number;
   rating: number | null;
   reportGeneratedAt: string | null;
   currentConditions: {
@@ -47,7 +69,29 @@ async function getBreaks(): Promise<BreakData[]> {
 }
 
 export default async function HomePage() {
-  const breaks = await getBreaks();
+  const mapEnabled = process.env.NEXT_PUBLIC_ENABLE_MAP === 'true';
+  const [breaks, gridData] = await Promise.all([getBreaks(), mapEnabled ? getGridData() : null]);
 
-  return <HomePageClient breaks={breaks} />;
+  const breakMarkers = breaks.map((b) => ({
+    id: b.id,
+    name: b.name,
+    lat: b.lat,
+    lng: b.lng,
+  }));
+
+  return (
+    <div>
+      {mapEnabled && gridData && process.env.NEXT_PUBLIC_MAPBOX_TOKEN && (
+        <div className="px-4 pt-4">
+          <MeteoMap
+            gridData={gridData}
+            breaks={breakMarkers}
+            initialBounds={VICTORIA_BOUNDS}
+            height="420px"
+          />
+        </div>
+      )}
+      <HomePageClient breaks={breaks} />
+    </div>
+  );
 }

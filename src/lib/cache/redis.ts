@@ -29,6 +29,7 @@ export function getRedis(): Redis {
 export const cacheKeys = {
   surfReport: (breakId: string) => `surf-report:${breakId}`,
   conditions: (breakId: string) => `conditions:${breakId}`,
+  mapGrid: () => `map:grid`,
 };
 
 /**
@@ -37,6 +38,7 @@ export const cacheKeys = {
 export const cacheTTL = {
   surfReport: 30 * 60, // 30 minutes
   conditions: 5 * 60, // 5 minutes
+  mapGrid: 3 * 60 * 60, // 3 hours
 };
 
 /**
