@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { BreakDetailClient } from './client';
 import type { GridData } from '@/app/api/map/grid/route';
 import { getTideConfidence } from '@/lib/claude/tide-confidence';
+import { getSurfScoreSummary } from '@/lib/claude/surf-score-summary';
+import { calculateSurfScore } from '@/lib/utils/surf-score';
 
 interface BreakDetail {
   break: {
@@ -153,12 +155,40 @@ export default async function BreakDetailPage({
       })
     : null;
 
+  let surfSummary: string | null = null;
+  if (detail.waveData) {
+    try {
+      const score = calculateSurfScore({
+        heightMeters: detail.waveData.height,
+        periodSeconds: detail.waveData.period,
+        windQuality: detail.currentConditions?.windQuality ?? null,
+        tideFactor: tideConfidence?.score ?? 0.6,
+      });
+      surfSummary = await getSurfScoreSummary({
+        breakId,
+        breakName: detail.break.name,
+        region: detail.break.region,
+        score,
+        window: 'now',
+        inputs: {
+          height: detail.waveData.height,
+          period: detail.waveData.period,
+          windQuality: detail.currentConditions?.windQuality ?? null,
+          tideSummary: tideConfidence?.summary ?? null,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to fetch surf score summary:', error);
+    }
+  }
+
   return (
     <BreakDetailClient
       detail={detail}
       report={report}
       gridData={gridData}
       tideConfidence={tideConfidence}
+      surfSummary={surfSummary}
     />
   );
 }

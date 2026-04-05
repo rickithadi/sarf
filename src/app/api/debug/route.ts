@@ -1,9 +1,32 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { observations, waves, weatherForecasts, tides, breaks } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Clear waves if ?clear=waves is passed
+  const clear = request.nextUrl.searchParams.get('clear');
+  if (clear === 'waves') {
+    await db.delete(waves);
+    return NextResponse.json({ message: 'Waves table cleared' });
+  }
+
+  // Test marine API directly if ?test=marine is passed
+  const test = request.nextUrl.searchParams.get('test');
+  if (test === 'marine') {
+    const { fetchMarineForecast } = await import('@/lib/open-meteo/marine');
+    const forecast = await fetchMarineForecast(-38.3686, 144.2811, 1);
+    return NextResponse.json({
+      count: forecast.length,
+      sample: forecast.slice(0, 3).map(f => ({
+        time: f.time,
+        waveHeight: f.waveHeight,
+        wavePeriod: f.wavePeriod,
+        swellWaveHeight: f.swellWaveHeight,
+        swellWavePeriod: f.swellWavePeriod,
+      })),
+    });
+  }
   const results: Record<string, unknown> = {};
 
   // 1. Check TimescaleDB extension
@@ -60,7 +83,34 @@ export async function GET() {
     results.rowCounts = { error: (e as Error).message };
   }
 
-  // 5. Test simple insert (without ON CONFLICT)
+  // 5. Sample wave data to check values (latest AND earliest)
+  try {
+    const latestWaves = await db.execute(sql`
+      SELECT time, break_id, wave_height, wave_period, swell_wave_height, swell_wave_period
+      FROM waves
+      WHERE break_id = 'bells-beach'
+      ORDER BY time DESC
+      LIMIT 3
+    `);
+    const earliestWaves = await db.execute(sql`
+      SELECT time, break_id, wave_height, wave_period, swell_wave_height, swell_wave_period
+      FROM waves
+      WHERE break_id = 'bells-beach'
+      ORDER BY time ASC
+      LIMIT 3
+    `);
+    const nonNullWaves = await db.execute(sql`
+      SELECT time, break_id, wave_height, wave_period, swell_wave_height, swell_wave_period
+      FROM waves
+      WHERE break_id = 'bells-beach' AND wave_height IS NOT NULL
+      LIMIT 3
+    `);
+    results.sampleWaves = { latest: latestWaves, earliest: earliestWaves, nonNull: nonNullWaves };
+  } catch (e) {
+    results.sampleWaves = { error: (e as Error).message };
+  }
+
+  // 6. Test simple insert (without ON CONFLICT)
   try {
     await db.insert(observations).values({
       time: new Date(),

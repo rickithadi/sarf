@@ -62,6 +62,7 @@ export function BreakCard({
   });
   const decision = scoreToDecision(score);
   const decisionColor = toneToColor(decision.tone);
+  const description = decision.description;
 
   return (
     <div className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg">
@@ -93,7 +94,7 @@ export function BreakCard({
           {surfRange}
           <span className="text-sm text-slate-500"> · {periodLabel} · {windSummary}</span>
         </p>
-        <p className="mt-2 text-sm text-slate-600">{decision.description}</p>
+        <p className="mt-2 text-sm text-slate-600">{description}</p>
 
         <div className="mt-4 text-xs uppercase tracking-[0.2em] text-slate-500">
           Updated {lastUpdated ?? 'recently'}

@@ -142,6 +142,7 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
   }, [heroData]);
 
   const heroDecision = heroScore !== null ? scoreToDecision(heroScore) : null;
+  const heroDescription = heroDecision?.description ?? 'Smart lineup picks driven by swell and wind signals.';
 
   const heroTimeline = useMemo(() => {
     if (!heroData?.best) return [];
@@ -193,9 +194,7 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
                 </div>
               )}
             </div>
-            <p className="mt-4 text-base text-white/80">
-              {heroDecision?.description ?? 'Smart lineup picks driven by swell, wind, and tide signals.'}
-            </p>
+            <p className="mt-4 text-base text-white/80">{heroDescription}</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {heroTimeline.map((entry) => (
                 <div key={entry.label} className="rounded-2xl bg-white/10 p-4">

@@ -16,13 +16,13 @@ interface SurfScoreInput {
 }
 
 export function calculateSurfScore({
-  heightMeters = 0,
-  periodSeconds = 0,
+  heightMeters,
+  periodSeconds,
   windQuality = null,
-  tideFactor = 0.6,
+  tideFactor,
 }: SurfScoreInput): number {
-  const swellComponent = Math.min(Math.max(heightMeters, 0) / 2.5, 1) * 4;
-  const periodComponent = Math.min(Math.max(periodSeconds, 0) / 14, 1) * 3;
+  const swellComponent = Math.min(Math.max(heightMeters ?? 0, 0) / 2.5, 1) * 4;
+  const periodComponent = Math.min(Math.max(periodSeconds ?? 0, 0) / 14, 1) * 3;
   const windComponent = (windWeights[windQuality ?? 'cross-shore'] ?? 0.55) * 3;
   const tideComponent = Math.min(Math.max(tideFactor ?? 0.6, 0), 1) * 1.5;
 

@@ -8,6 +8,15 @@ import { degreesToCardinal, calculateWindQuality, type WindQuality } from '@/lib
 import { classifySwellType, type SwellType } from '@/lib/utils/wave-quality';
 import type { HourlyForecastData } from './hourly-table';
 
+// Wind quality display names for tooltip
+const windQualityLabels: Record<WindQuality, string> = {
+  offshore: 'Offshore',
+  'cross-offshore': 'Cross-offshore',
+  'cross-shore': 'Cross-shore',
+  'cross-onshore': 'Cross-onshore',
+  onshore: 'Onshore',
+};
+
 interface SimplifiedForecastProps {
   data: HourlyForecastData[];
   tides?: Array<{ time: string; type: string; height: number }>;
@@ -19,9 +28,11 @@ interface SimplifiedForecastProps {
 interface TimeSlot {
   time: Date;
   dayLabel: string;
+  dateNumber: string;
   timeLabel: string;
   waveHeight: number | null;
   wavePeriod: number | null;
+  waveDirection: number | null;
   windSpeed: number | null;
   windDirection: number | null;
   windQuality: WindQuality | null;
@@ -58,22 +69,23 @@ function getWindColor(quality: WindQuality | null): string {
 }
 
 /**
- * Get color for period badge based on swell type
+ * Get color for period badge based on swell type (filled style)
  */
 function getPeriodColor(swellType: SwellType | null): string {
   switch (swellType) {
     case 'ground-swell':
-      return 'border-emerald-500 text-emerald-600';
+      return 'bg-emerald-500 text-white';
     case 'long-period':
-      return 'border-blue-500 text-blue-600';
+      return 'bg-blue-500 text-white';
     case 'wind-swell':
-      return 'border-amber-500 text-amber-600';
+      return 'bg-amber-500 text-white';
     case 'short-chop':
-      return 'border-red-400 text-red-500';
+      return 'bg-red-400 text-white';
     default:
-      return 'border-gray-300 text-gray-500';
+      return 'bg-gray-300 text-gray-600';
   }
 }
+
 
 /**
  * Simplified visual forecast component
@@ -89,6 +101,8 @@ export function SimplifiedForecast({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [hoveredSlot, setHoveredSlot] = useState<TimeSlot | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
 
   // Process data into time slots (6-hour intervals: 12am, 6am, 12pm, 6pm)
   const timeSlots = useMemo(() => {
@@ -115,9 +129,11 @@ export function SimplifiedForecast({
       slots.push({
         time: d.time,
         dayLabel: format(d.time, 'EEE'),
+        dateNumber: format(d.time, 'd'),
         timeLabel: format(d.time, 'ha').toLowerCase(),
         waveHeight: d.waveHeight,
         wavePeriod: d.swellPeriod ?? d.wavePeriod,
+        waveDirection: d.swellDirection ?? d.waveDirection,
         windSpeed: d.windSpeed,
         windDirection: d.windDirection,
         windQuality,
@@ -128,6 +144,20 @@ export function SimplifiedForecast({
 
     return slots;
   }, [data, optimalWindDirection]);
+
+  // Handle hover for tooltip
+  const handleSlotHover = (slot: TimeSlot | null, event?: React.MouseEvent) => {
+    setHoveredSlot(slot);
+    if (slot && event) {
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      setTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+      });
+    } else {
+      setTooltipPosition(null);
+    }
+  };
 
   // Get max wave height for bar scaling
   const maxHeight = useMemo(() => {
@@ -229,26 +259,36 @@ export function SimplifiedForecast({
                     <div
                       key={i}
                       className={cn(
-                        'w-16 text-center py-2 border-b border-gray-100',
+                        'w-20 text-center py-2 border-b border-gray-200',
                         i === 0 ? 'font-semibold text-gray-900' : 'text-gray-500'
                       )}
                     >
-                      <div className="text-sm">{i === 0 ? slot.dayLabel : ''}</div>
-                      <div className="text-xs">{slot.timeLabel}</div>
+                      {i === 0 && (
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-sm font-bold">{slot.dayLabel}</span>
+                          <span className="text-sm text-gray-500">{slot.dateNumber}</span>
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-600">{slot.timeLabel}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Wind row */}
-                <div className="flex border-b border-gray-100">
+                <div className="flex border-b border-gray-200">
                   {daySlots.map((slot, i) => (
-                    <div key={i} className="w-16 py-2 text-center">
+                    <div
+                      key={i}
+                      className="w-20 py-3 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+                      onMouseEnter={(e) => handleSlotHover(slot, e)}
+                      onMouseLeave={() => handleSlotHover(null)}
+                    >
                       {slot.windDirection !== null && slot.windSpeed !== null ? (
                         <>
-                          {/* Wind arrow */}
+                          {/* Wind arrow - larger */}
                           <div className={cn('flex justify-center', getWindColor(slot.windQuality))}>
                             <svg
-                              className="w-4 h-4"
+                              className="w-6 h-6"
                               viewBox="0 0 24 24"
                               fill="currentColor"
                               style={{
@@ -258,12 +298,12 @@ export function SimplifiedForecast({
                               <path d="M12 2L6 14h4v8h4v-8h4L12 2z" />
                             </svg>
                           </div>
-                          {/* Wind speed */}
-                          <div className={cn('text-sm font-bold', getWindColor(slot.windQuality))}>
+                          {/* Wind speed - larger */}
+                          <div className={cn('text-base font-bold', getWindColor(slot.windQuality))}>
                             {Math.round(slot.windSpeed * 0.539957)}
                           </div>
                           {/* Wind direction */}
-                          <div className={cn('text-xs', getWindColor(slot.windQuality))}>
+                          <div className={cn('text-xs font-medium', getWindColor(slot.windQuality))}>
                             {degreesToCardinal(slot.windDirection)}
                           </div>
                         </>
@@ -275,7 +315,7 @@ export function SimplifiedForecast({
                 </div>
 
                 {/* Wave height bars */}
-                <div className="flex items-end h-32 border-b border-gray-100 px-1">
+                <div className="flex items-end h-36 border-b border-gray-200 px-1">
                   {daySlots.map((slot, i) => {
                     const height = slot.waveHeight ?? 0;
                     const barHeight = maxHeight > 0 ? (height / maxHeight) * 100 : 0;
@@ -285,55 +325,68 @@ export function SimplifiedForecast({
                         : height.toFixed(1);
 
                     return (
-                      <div key={i} className="w-16 flex flex-col items-center justify-end h-full px-1">
-                        {/* Height value */}
-                        <div className="text-xs text-gray-600 mb-1">{displayHeight}</div>
-                        {/* Bar */}
+                      <div
+                        key={i}
+                        className="w-20 flex flex-col items-center justify-end h-full px-1 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                        onMouseEnter={(e) => handleSlotHover(slot, e)}
+                        onMouseLeave={() => handleSlotHover(null)}
+                      >
+                        {/* Height value - larger */}
+                        <div className="text-sm font-semibold text-gray-700 mb-1">{displayHeight}</div>
+                        {/* Bar - wider, navy color */}
                         <div
-                          className="w-8 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t"
-                          style={{ height: `${Math.max(barHeight, 5)}%` }}
+                          className="w-12 bg-slate-700 rounded-t"
+                          style={{ height: `${Math.max(barHeight, 8)}%` }}
                         />
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Period circles */}
-                <div className="flex border-b border-gray-100">
+                {/* Period circles - filled style */}
+                <div className="flex border-b border-gray-200">
                   {daySlots.map((slot, i) => (
-                    <div key={i} className="w-16 py-2 flex justify-center">
+                    <div
+                      key={i}
+                      className="w-20 py-3 flex justify-center cursor-pointer hover:bg-gray-50 transition-colors"
+                      onMouseEnter={(e) => handleSlotHover(slot, e)}
+                      onMouseLeave={() => handleSlotHover(null)}
+                    >
                       {slot.wavePeriod !== null ? (
                         <div
                           className={cn(
-                            'w-9 h-9 rounded-full border-2 flex items-center justify-center',
+                            'w-10 h-10 rounded-full flex items-center justify-center shadow-sm',
                             getPeriodColor(slot.swellType)
                           )}
                         >
-                          <span className="text-xs font-semibold">
+                          <span className="text-sm font-bold">
                             {Math.round(slot.wavePeriod)}s
                           </span>
                         </div>
                       ) : (
-                        <div className="w-9 h-9 rounded-full border-2 border-gray-200 flex items-center justify-center">
-                          <span className="text-xs text-gray-400">-</span>
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-sm text-gray-400">-</span>
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
 
-                {/* Tide times */}
+                {/* Tide times with HIGH/Low labels */}
                 {dayTides.length > 0 && (
-                  <div className="flex flex-wrap gap-x-2 gap-y-0.5 px-2 py-2 text-xs">
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 px-3 py-2 text-xs">
                     {dayTides.slice(0, 4).map((tide, i) => (
                       <span
                         key={i}
                         className={cn(
                           'font-medium',
-                          tide.type === 'high' ? 'text-gray-900' : 'text-fuchsia-500'
+                          tide.type === 'high' ? 'text-gray-800' : 'text-fuchsia-500'
                         )}
                       >
-                        {format(tide.time, 'h:mma').toLowerCase()}
+                        {format(tide.time, 'h:mma').toLowerCase()}{' '}
+                        <span className="font-bold">
+                          {tide.type === 'high' ? 'HIGH' : 'Low'}
+                        </span>
                       </span>
                     ))}
                   </div>
@@ -357,28 +410,71 @@ export function SimplifiedForecast({
         </button>
       )}
 
+      {/* Tooltip */}
+      {hoveredSlot && tooltipPosition && (
+        <div
+          className="fixed z-50 bg-gray-900 text-white text-xs rounded-lg shadow-lg px-3 py-2 pointer-events-none"
+          style={{
+            left: tooltipPosition.x,
+            top: tooltipPosition.y - 10,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          <div className="font-semibold mb-1">
+            {format(hoveredSlot.time, 'EEE d MMM')} · {hoveredSlot.timeLabel}
+          </div>
+          {hoveredSlot.windSpeed !== null && hoveredSlot.windDirection !== null && (
+            <div className="mb-1">
+              <span className="text-gray-400">Wind: </span>
+              <span className={getWindColor(hoveredSlot.windQuality).replace('text-', 'text-')}>
+                {Math.round(hoveredSlot.windSpeed * 0.539957)}kts {degreesToCardinal(hoveredSlot.windDirection)}
+              </span>
+              {hoveredSlot.windQuality && (
+                <span className="text-gray-400"> ({windQualityLabels[hoveredSlot.windQuality]})</span>
+              )}
+            </div>
+          )}
+          {hoveredSlot.waveHeight !== null && (
+            <div className="mb-1">
+              <span className="text-gray-400">Swell: </span>
+              {unit === 'imperial'
+                ? metersToFeet(hoveredSlot.waveHeight).toFixed(1)
+                : hoveredSlot.waveHeight.toFixed(1)}
+              {unit === 'imperial' ? 'ft' : 'm'}
+              {hoveredSlot.wavePeriod && ` @ ${Math.round(hoveredSlot.wavePeriod)}s`}
+              {hoveredSlot.waveDirection !== null && ` ${degreesToCardinal(hoveredSlot.waveDirection)}`}
+            </div>
+          )}
+          {hoveredSlot.swellType && (
+            <div className="text-gray-400 capitalize">
+              {hoveredSlot.swellType.replace('-', ' ')}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Legend */}
       <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-gray-500 px-2">
         <span className="font-medium">Period:</span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full border-2 border-emerald-500" />
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-emerald-500" />
           Ground (14s+)
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full border-2 border-blue-500" />
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-blue-500" />
           Long (10-14s)
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full border-2 border-amber-500" />
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-amber-500" />
           Wind (7-10s)
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full border-2 border-red-400" />
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-red-400" />
           Chop (&lt;7s)
         </span>
         <span className="ml-4 font-medium">Tides:</span>
-        <span className="text-gray-900">High</span>
-        <span className="text-fuchsia-500">Low</span>
+        <span className="text-gray-800 font-medium">HIGH</span>
+        <span className="text-fuchsia-500 font-medium">Low</span>
       </div>
     </div>
   );

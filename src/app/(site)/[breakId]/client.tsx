@@ -9,6 +9,8 @@ import { FavoriteButton } from '@/components/ui/favorites';
 import { UnitSelector, useUnit } from '@/components/ui/unit-toggle';
 import { WindDisplay } from '@/components/ui/wind-arrow';
 import { SwellDisplay } from '@/components/ui/swell-arrow';
+import { ScrollToTop } from '@/components/ui/scroll-to-top';
+import { CollapsibleSection } from '@/components/ui/collapsible-section';
 // Wave quality UI components available but hidden for now
 // import { SwellTypeBadge, WavePowerIndicator, ConsistencyBadge, SetWaveEstimateCompact } from '@/components/ui/swell-quality-badge';
 import { MultidayForecast, HorizontalForecastStrip, SimplifiedForecast, type HourlyForecastData } from '@/components/forecast';
@@ -28,7 +30,6 @@ import type { WindQuality } from '@/lib/breaks/wind-quality';
 import { MeteoMap } from '@/components/map/MeteoMap';
 import type { GridData } from '@/app/api/map/grid/route';
 import { calculateSurfScore, scoreToDecision, toneToColor } from '@/lib/utils/surf-score';
-import { useEffect, useState } from 'react';
 
 type TabType = 'report' | 'charts' | 'guide';
 
@@ -101,9 +102,10 @@ interface BreakDetailClientProps {
   } | null;
   gridData: GridData | null;
   tideConfidence: { score: number; summary: string } | null;
+  surfSummary: string | null;
 }
 
-export function BreakDetailClient({ detail, report, gridData, tideConfidence }: BreakDetailClientProps) {
+export function BreakDetailClient({ detail, report, gridData, tideConfidence, surfSummary }: BreakDetailClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>('report');
   const [selectedForecastDate, setSelectedForecastDate] = useState<Date | null>(null);
   const { unit } = useUnit();
@@ -149,7 +151,15 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
     if (hourlyData.length === 0) return null;
     let start: Date | null = null;
     let end: Date | null = null;
+    const isDaylight = (date: Date) => {
+      const hour = date.getHours();
+      return hour >= 5 && hour <= 20; // Approx sunrise/sunset window
+    };
     for (const point of hourlyData) {
+      if (!isDaylight(point.time)) {
+        if (start) break;
+        continue;
+      }
       const waveOk = (point.waveHeight ?? 0) >= 0.5;
       const windOk = point.windQuality === 'offshore' || point.windQuality === 'cross-offshore';
       if (waveOk && windOk) {
@@ -177,6 +187,16 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
   const tideFactor = tideConfidence?.score ?? getHeuristicTideFavorability(tides);
   const tideLabel = tideScoreToLabel(tideConfidence?.score ?? tideFactor);
   const tideHint = tideConfidence?.summary ?? getHeuristicTideHint(tides);
+
+  const scoreBreakdown = useMemo(() => {
+    if (!waveData) return null;
+    return calculateScoreBreakdown(
+      waveData.height ?? waveData.swellHeight ?? 0,
+      waveData.period ?? waveData.swellPeriod ?? 0,
+      currentConditions?.windQuality ?? null,
+      tideFactor
+    );
+  }, [waveData, currentConditions?.windQuality, tideFactor]);
   const surfScore = calculateSurfScore({
     heightMeters: waveData?.height,
     periodSeconds: waveData?.period,
@@ -184,19 +204,20 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
     tideFactor,
   });
   const surfDecision = scoreToDecision(surfScore);
+  const surfDescription = surfSummary ?? surfDecision.description;
   const decisionColor = toneToColor(surfDecision.tone);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Back link */}
+      {/* Back link - enhanced for better touch targets */}
       <Link
         href="/"
-        className="mb-6 inline-flex items-center text-sm text-gray-600 hover:text-blue-600"
+        className="mb-6 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
       >
-        <svg className="mr-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        Back to all breaks
+        All Breaks
       </Link>
 
       {/* Header */}
@@ -228,7 +249,7 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
               <p className="text-5xl font-bold leading-none">
                 {surfScore.toFixed(1)}<span className="text-2xl">/10</span>
               </p>
-              <p className="mt-2 text-sm text-white/80">{surfDecision.description}</p>
+              <p className="mt-2 text-sm text-white/80">{surfDescription}</p>
             </div>
             <div className="flex flex-col items-start gap-2 text-right sm:items-end">
               <span
@@ -252,31 +273,33 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
         </div>
       </header>
 
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <QuickStat label="Best window" value={bestWindowLabel} hint="Offshore wind + >0.5m swell" />
         <QuickStat label="Primary swell" value={swellStatValue} hint={swellHint} />
         <QuickStat label="Wind status" value={windStatValue} hint={windHint} />
         <QuickStat label="Tide call" value={tideLabel} hint={tideHint} />
       </section>
 
-      {/* Tabs */}
-      <div className="mb-6 border-b border-gray-200">
-        <nav className="flex gap-6">
-          {(['report', 'charts', 'guide'] as TabType[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                'pb-3 text-sm font-medium capitalize transition-colors',
-                activeTab === tab
-                  ? 'border-b-2 border-blue-600 text-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              )}
-            >
-              {tab === 'report' ? 'Report & Forecast' : tab}
-            </button>
-          ))}
-        </nav>
+      {/* Tabs - sticky below header */}
+      <div className="sticky top-0 z-40 -mx-4 bg-white px-4 pt-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="border-b border-gray-200">
+          <nav className="flex gap-6">
+            {(['report', 'charts', 'guide'] as TabType[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'min-h-[44px] px-1 pb-3 text-sm font-medium capitalize transition-colors',
+                  activeTab === tab
+                    ? 'border-b-2 border-blue-600 text-blue-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                )}
+              >
+                {tab === 'report' ? 'Report & Forecast' : tab}
+              </button>
+            ))}
+          </nav>
+        </div>
       </div>
 
       {/* Tab content */}
@@ -307,7 +330,7 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
           )}
 
           {/* 10-Day Forecast */}
-          <section>
+          <section id="forecast">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">10-Day Forecast</h2>
               <button
@@ -367,10 +390,9 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
           </section>
 
           {/* Current Conditions & Wave Data Grid */}
-          <div className="grid gap-6 md:grid-cols-2">
+          <div id="conditions" className="grid gap-6 md:grid-cols-2">
             {/* Current Conditions */}
-            <section className="rounded-lg border border-gray-200 bg-white p-6">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">Current Conditions</h2>
+            <CollapsibleSection title="Current Conditions" defaultOpen>
               {currentConditions ? (
                 <dl className="space-y-3">
                   <div className="flex justify-between">
@@ -421,11 +443,10 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
               ) : (
                 <p className="text-gray-400">No observation data available</p>
               )}
-            </section>
+            </CollapsibleSection>
 
             {/* Wave Data */}
-            <section className="rounded-lg border border-gray-200 bg-white p-6">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">Wave Data</h2>
+            <CollapsibleSection title="Wave Data" defaultOpen>
               {waveData && waveData.height !== null ? (
                 <dl className="space-y-3">
                   <div className="flex justify-between">
@@ -460,12 +481,11 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
               ) : (
                 <p className="text-gray-400">No wave data available</p>
               )}
-            </section>
+            </CollapsibleSection>
           </div>
 
           {/* Tides */}
-          <section className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Upcoming Tides</h2>
+          <CollapsibleSection id="tides" title="Upcoming Tides" defaultOpen={false}>
             {tides.length > 0 ? (
               <div className="flex flex-wrap gap-4">
                 {tides.map((tide, i) => (
@@ -478,6 +498,7 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
                         : 'bg-gray-50 text-gray-800'
                     )}
                   >
+                    <p className="text-xs opacity-75">{format(new Date(tide.time), 'EEE d MMM')}</p>
                     <p className="text-sm font-medium capitalize">{tide.type}</p>
                     <p className="text-lg font-bold">
                       {format(new Date(tide.time), 'h:mm a')}
@@ -489,7 +510,7 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
             ) : (
               <p className="text-gray-400">No tide data available</p>
             )}
-          </section>
+          </CollapsibleSection>
 
           {/* Nearby Spots */}
           {nearbyWithDistance.length > 0 && (
@@ -503,7 +524,7 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
       )}
 
       {activeTab === 'charts' && (
-        <div className="space-y-6">
+        <div id="charts" className="space-y-6">
           {/* Meteorological Map */}
           {gridData && process.env.NEXT_PUBLIC_MAPBOX_TOKEN && (
             <section className="rounded-lg border border-gray-200 overflow-hidden">
@@ -515,6 +536,16 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
                   ne: [breakData.lat + 3, breakData.lng + 4],
                 }}
                 height="380px"
+              />
+            </section>
+          )}
+
+          {scoreBreakdown && (
+            <section className="rounded-lg border border-gray-200 bg-white p-6">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">Score Drivers</h2>
+              <ScoreRing
+                breakdown={scoreBreakdown}
+                decision={surfDecision}
               />
             </section>
           )}
@@ -578,8 +609,7 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
       {activeTab === 'guide' && (
         <div className="space-y-6">
           {/* Break Info */}
-          <section className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Break Information</h2>
+          <CollapsibleSection title="Break Information" defaultOpen>
             <dl className="space-y-4">
               <div>
                 <dt className="text-sm font-medium text-gray-500">Location</dt>
@@ -599,11 +629,10 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
                 </dd>
               </div>
             </dl>
-          </section>
+          </CollapsibleSection>
 
           {/* Best Conditions */}
-          <section className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Best Conditions</h2>
+          <CollapsibleSection title="Best Conditions" defaultOpen>
             <ul className="space-y-2 text-gray-700">
               <li className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -630,9 +659,12 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence }: 
                 Mid to low tide
               </li>
             </ul>
-          </section>
+          </CollapsibleSection>
         </div>
       )}
+
+      {/* Scroll to top button */}
+      <ScrollToTop />
     </div>
   );
 }
@@ -659,6 +691,34 @@ function tideScoreToLabel(score: number) {
   return 'Out of phase';
 }
 
+function calculateScoreBreakdown(
+  heightMeters: number,
+  periodSeconds: number,
+  windQuality: WindQuality | null,
+  tideFactor: number
+) {
+  const clamp = (value: number, min = 0, max = 1) => Math.min(Math.max(value, min), max);
+  const swell = clamp(heightMeters / 2.5) * 4;
+  const period = clamp(periodSeconds / 14) * 3;
+  const windWeights: Record<WindQuality, number> = {
+    offshore: 1,
+    'cross-offshore': 0.85,
+    'cross-shore': 0.65,
+    'cross-onshore': 0.4,
+    onshore: 0.2,
+  };
+  const windScore = (windWeights[windQuality ?? 'cross-shore'] ?? 0.55) * 3;
+  const tideScore = clamp(tideFactor) * 1.5;
+  const total = Math.min(swell + period + windScore + tideScore, 10);
+  return {
+    total,
+    swell,
+    period,
+    wind: windScore,
+    tide: tideScore,
+  };
+}
+
 function getHeuristicTideFavorability(tides?: Array<{ type: string }>) {
   if (!tides || tides.length === 0) return 0.6;
   const type = tides[0]?.type?.toLowerCase() ?? '';
@@ -668,8 +728,66 @@ function getHeuristicTideFavorability(tides?: Array<{ type: string }>) {
   return 0.6;
 }
 
-function getHeuristicTideHint(tides?: Array<{ type: string }>) {
+function getHeuristicTideHint(tides?: Array<{ type: string; time: string }>) {
   if (!tides || tides.length === 0) return 'Awaiting tide data';
   const next = tides[0];
   return `${next.type} around ${new Date(next.time).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}`;
+}
+
+function ScoreRing({
+  breakdown,
+  decision,
+}: {
+  breakdown: ReturnType<typeof calculateScoreBreakdown>;
+  decision: ReturnType<typeof scoreToDecision>;
+}) {
+  const progress = (breakdown.total / 10) * 100;
+  const gradient = `conic-gradient(#2E8BC0 ${progress}%, #e2e8f0 ${progress}% 100%)`;
+  const contributions = [
+    { label: 'Swell', value: breakdown.swell / 4, color: '#2E8BC0' },
+    { label: 'Period', value: breakdown.period / 3, color: '#0B7285' },
+    { label: 'Wind', value: breakdown.wind / 3, color: '#4CAF50' },
+    { label: 'Tide', value: breakdown.tide / 1.5, color: '#F4D35E' },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+      <div className="flex items-center justify-center">
+        <div
+          className="relative h-48 w-48 rounded-full p-4"
+          style={{ background: gradient }}
+        >
+          <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white shadow-inner">
+            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Score</p>
+            <p className="text-4xl font-bold text-slate-900">
+              {breakdown.total.toFixed(1)}
+              <span className="text-base text-slate-500">/10</span>
+            </p>
+            <span
+              className="mt-2 rounded-full px-3 py-0.5 text-xs font-semibold"
+              style={{ backgroundColor: toneToColor(decision.tone), color: '#0B1F2A' }}
+            >
+              {decision.label}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 space-y-3">
+        {contributions.map((c) => (
+          <div key={c.label}>
+            <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+              <span>{c.label}</span>
+              <span>{Math.round(c.value * 100)}%</span>
+            </div>
+            <div className="mt-1 h-2 rounded-full bg-slate-200">
+              <div
+                className="h-2 rounded-full"
+                style={{ width: `${Math.min(c.value, 1) * 100}%`, backgroundColor: c.color }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

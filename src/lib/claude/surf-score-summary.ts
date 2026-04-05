@@ -3,7 +3,7 @@ import { getAnthropicClient } from './client';
 import { cacheKeys, cacheTTL, getCached, setCached } from '../cache/redis';
 
 const SummarySchema = z.object({
-  summary: z.string().min(8).max(180),
+  summary: z.string().min(8).max(220),
 });
 
 interface SurfScoreSummaryParams {

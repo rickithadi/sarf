@@ -41,7 +41,7 @@ export const cacheTTL = {
   surfReport: 30 * 60, // 30 minutes
   conditions: 5 * 60, // 5 minutes
   mapGrid: 3 * 60 * 60, // 3 hours
-  tideConfidence: 10 * 60, // 10 minutes
+  tideConfidence: 60 * 60, // 1 hour
   surfScoreSummary: 10 * 60,
 };
 
