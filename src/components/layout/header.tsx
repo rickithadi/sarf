@@ -1,35 +1,43 @@
+"use client";
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const NAV_LINKS = [
+  { href: '/', label: 'Live dashboard' },
+  { href: '/how-it-works', label: 'How it works' },
+];
 
 export function Header() {
+  const pathname = usePathname();
+
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <svg
-              className="h-8 w-8 text-blue-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-              />
-            </svg>
-            <span className="text-xl font-bold text-gray-900">Surf Forecast</span>
-          </Link>
-          <nav className="flex items-center gap-6">
+    <header className="border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#0B1F2A] text-white text-lg font-bold">
+            L
+          </span>
+          <div>
+            <p className="text-base font-semibold text-slate-900">LINEUP</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-[#2E8BC0]">Know when it’s on</p>
+          </div>
+        </Link>
+        <nav className="flex items-center gap-4 text-sm font-medium">
+          {NAV_LINKS.map((link) => (
             <Link
-              href="/"
-              className="text-sm font-medium text-gray-700 hover:text-blue-600"
+              key={link.href}
+              href={link.href}
+              className={`rounded-full px-3 py-1 transition-colors ${
+                pathname === link.href
+                  ? 'bg-[#2E8BC0]/10 text-[#0B1F2A]'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
             >
-              All Breaks
+              {link.label}
             </Link>
-          </nav>
-        </div>
+          ))}
+        </nav>
       </div>
     </header>
   );

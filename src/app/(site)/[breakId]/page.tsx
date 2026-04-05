@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { BreakDetailClient } from './client';
 import type { GridData } from '@/app/api/map/grid/route';
+import { getTideConfidence } from '@/lib/claude/tide-confidence';
 
 interface BreakDetail {
   break: {
@@ -143,11 +144,21 @@ export default async function BreakDetailPage({
     notFound();
   }
 
+  const tideConfidence = detail.tides && detail.tides.length > 0
+    ? await getTideConfidence({
+        breakId,
+        breakName: detail.break.name,
+        region: detail.break.region,
+        tides: detail.tides,
+      })
+    : null;
+
   return (
     <BreakDetailClient
       detail={detail}
       report={report}
       gridData={gridData}
+      tideConfidence={tideConfidence}
     />
   );
 }

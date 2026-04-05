@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,8 @@ import type { WindQuality } from '@/lib/breaks/wind-quality';
 // import { analyzeWave, classifySwellType, calculateSetWaveEstimate } from '@/lib/utils/wave-quality';
 import { MeteoMap } from '@/components/map/MeteoMap';
 import type { GridData } from '@/app/api/map/grid/route';
+import { calculateSurfScore, scoreToDecision, toneToColor } from '@/lib/utils/surf-score';
+import { useEffect, useState } from 'react';
 
 type TabType = 'report' | 'charts' | 'guide';
 
@@ -98,14 +100,22 @@ interface BreakDetailClientProps {
     generatedAt?: string;
   } | null;
   gridData: GridData | null;
+  tideConfidence: { score: number; summary: string } | null;
 }
 
-export function BreakDetailClient({ detail, report, gridData }: BreakDetailClientProps) {
+export function BreakDetailClient({ detail, report, gridData, tideConfidence }: BreakDetailClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>('report');
   const [selectedForecastDate, setSelectedForecastDate] = useState<Date | null>(null);
   const { unit } = useUnit();
 
-  const { break: breakData, currentConditions, waveData, hourlyForecast = [], tides = [], nearbySpots = [] } = detail;
+  const {
+    break: breakData,
+    currentConditions,
+    waveData,
+    hourlyForecast = [],
+    tides = [],
+    nearbySpots = [],
+  } = detail;
 
   // Convert hourly forecast to the format expected by components
   const hourlyData: HourlyForecastData[] = (hourlyForecast || []).map((h) => ({
@@ -135,6 +145,47 @@ export function BreakDetailClient({ detail, report, gridData }: BreakDetailClien
     height: h.waveHeight,
   }));
 
+  const bestWindow = useMemo(() => {
+    if (hourlyData.length === 0) return null;
+    let start: Date | null = null;
+    let end: Date | null = null;
+    for (const point of hourlyData) {
+      const waveOk = (point.waveHeight ?? 0) >= 0.5;
+      const windOk = point.windQuality === 'offshore' || point.windQuality === 'cross-offshore';
+      if (waveOk && windOk) {
+        if (!start) start = point.time;
+        end = point.time;
+      } else if (start) {
+        break;
+      }
+    }
+    if (!start || !end) return null;
+    return { start, end };
+  }, [hourlyData]);
+
+  const bestWindowLabel = bestWindow
+    ? `${format(bestWindow.start, 'EEE h a')} – ${format(bestWindow.end, 'h a')}`
+    : report?.bestTime ?? 'Not set';
+  const swellStatValue = waveData?.swellHeight
+    ? `${formatWaveHeight(waveData.swellHeight, unit, 1)} · ${waveData.swellPeriod ? `${Math.round(waveData.swellPeriod)}s` : ''}`
+    : 'Pending';
+  const swellHint = waveData?.swellDirectionCardinal ? `From ${waveData.swellDirectionCardinal}` : 'Direction pending';
+  const windStatValue = currentConditions
+    ? `${formatWindSpeed(currentConditions.windSpeedKmh, unit)} ${currentConditions.windDirCardinal}`
+    : 'Calm / N/A';
+  const windHint = currentConditions?.windQualityDescription ?? 'Wind data pending';
+  const tideFactor = tideConfidence?.score ?? getHeuristicTideFavorability(tides);
+  const tideLabel = tideScoreToLabel(tideConfidence?.score ?? tideFactor);
+  const tideHint = tideConfidence?.summary ?? getHeuristicTideHint(tides);
+  const surfScore = calculateSurfScore({
+    heightMeters: waveData?.height,
+    periodSeconds: waveData?.period,
+    windQuality: currentConditions?.windQuality ?? null,
+    tideFactor,
+  });
+  const surfDecision = scoreToDecision(surfScore);
+  const decisionColor = toneToColor(surfDecision.tone);
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Back link */}
@@ -158,32 +209,55 @@ export function BreakDetailClient({ detail, report, gridData }: BreakDetailClien
             </div>
             <FavoriteButton breakId={breakData.id} size="lg" />
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <UnitSelector />
             {report && <RatingBadge rating={report.rating} size="lg" />}
+            <a
+              href="mailto:team@lineup.app?subject=LINEUP%20spot%20alerts"
+              className="rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+            >
+              Get LINEUP alerts
+            </a>
           </div>
         </div>
 
-        {/* Current surf conditions summary */}
-        {waveData && waveData.height !== null && (
-          <div className="mt-4 flex flex-wrap items-center gap-6">
+        <div className="mt-4 rounded-2xl bg-[#0B1F2A] p-6 text-white shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <span className="text-4xl font-bold text-blue-600">
-                {formatSurfRange(waveData.height, waveData.period, unit)}
-              </span>
+              <p className="text-xs uppercase tracking-[0.4em] text-white/60">Surf score</p>
+              <p className="text-5xl font-bold leading-none">
+                {surfScore.toFixed(1)}<span className="text-2xl">/10</span>
+              </p>
+              <p className="mt-2 text-sm text-white/80">{surfDecision.description}</p>
             </div>
-            {currentConditions && (
-              <WindDisplay
-                direction={currentConditions.windDir}
-                speedKmh={currentConditions.windSpeedKmh}
-                quality={currentConditions.windQuality}
-                unit={unit === 'imperial' ? 'kts' : 'kmh'}
-                size="lg"
-              />
-            )}
+            <div className="flex flex-col items-start gap-2 text-right sm:items-end">
+              <span
+                className="inline-flex items-center rounded-full px-4 py-1 text-sm font-semibold"
+                style={{ backgroundColor: decisionColor, color: '#0B1F2A' }}
+              >
+                {surfDecision.label}
+              </span>
+              <p className="text-sm text-white/70">
+                {waveData?.height !== null && waveData?.height !== undefined
+                  ? `${formatSurfRange(waveData.height, waveData.period, unit)} · ${waveData?.period ? `${Math.round(waveData.period)}s` : '—'}`
+                  : 'Flat seas'}
+              </p>
+              <p className="text-xs uppercase tracking-[0.3em] text-white/50">
+                {currentConditions
+                  ? `${formatWindSpeed(currentConditions.windSpeedKmh, unit)} ${currentConditions.windDirCardinal}`
+                  : 'Calm / N/A'}
+              </p>
+            </div>
           </div>
-        )}
+        </div>
       </header>
+
+      <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <QuickStat label="Best window" value={bestWindowLabel} hint="Offshore wind + >0.5m swell" />
+        <QuickStat label="Primary swell" value={swellStatValue} hint={swellHint} />
+        <QuickStat label="Wind status" value={windStatValue} hint={windHint} />
+        <QuickStat label="Tide call" value={tideLabel} hint={tideHint} />
+      </section>
 
       {/* Tabs */}
       <div className="mb-6 border-b border-gray-200">
@@ -567,4 +641,35 @@ function getCardinalFromDegrees(degrees: number): string {
   const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
+}
+
+function QuickStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="rounded-xl border border-[#2E8BC0]/30 bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-slate-900">{value}</p>
+      {hint && <p className="text-xs text-slate-500">{hint}</p>}
+    </div>
+  );
+}
+
+function tideScoreToLabel(score: number) {
+  if (score >= 0.75) return 'Dialed in';
+  if (score >= 0.55) return 'Improving';
+  return 'Out of phase';
+}
+
+function getHeuristicTideFavorability(tides?: Array<{ type: string }>) {
+  if (!tides || tides.length === 0) return 0.6;
+  const type = tides[0]?.type?.toLowerCase() ?? '';
+  if (type.includes('low')) return 0.8;
+  if (type.includes('mid')) return 0.7;
+  if (type.includes('high')) return 0.55;
+  return 0.6;
+}
+
+function getHeuristicTideHint(tides?: Array<{ type: string }>) {
+  if (!tides || tides.length === 0) return 'Awaiting tide data';
+  const next = tides[0];
+  return `${next.type} around ${new Date(next.time).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}`;
 }

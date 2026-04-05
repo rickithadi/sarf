@@ -2,20 +2,16 @@
 
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { RatingBadge } from '@/components/ui/rating-badge';
 import { FavoriteButton } from '@/components/ui/favorites';
-import { WindArrow } from '@/components/ui/wind-arrow';
-import { SwellTypeBadge, WavePowerBadge } from '@/components/ui/swell-quality-badge';
 import { useUnit } from '@/components/ui/unit-toggle';
-import { formatSurfRange, formatWindSpeed, formatTemperature } from '@/lib/utils/units';
+import { formatSurfRange, formatWindSpeed } from '@/lib/utils/units';
 import { WindQuality } from '@/lib/breaks/wind-quality';
-import { classifySwellType, calculateWavePower } from '@/lib/utils/wave-quality';
+import { calculateSurfScore, scoreToDecision, toneToColor } from '@/lib/utils/surf-score';
 
 interface BreakCardProps {
   id: string;
   name: string;
   region: string;
-  rating: number | null;
   reportGeneratedAt?: string | null;
   currentConditions: {
     airTemp: number | null;
@@ -23,6 +19,7 @@ interface BreakCardProps {
     gustKmh: number | null;
     windDir: number | null;
     windQuality: WindQuality | null;
+    updatedAt?: string | Date;
   } | null;
   waveData: {
     height: number | null;
@@ -37,127 +34,69 @@ function degreesToCardinal(degrees: number | null): string {
   return directions[index];
 }
 
-function windQualityColor(quality: WindQuality | null): string {
-  switch (quality) {
-    case 'offshore':
-      return 'text-emerald-600';
-    case 'cross-offshore':
-      return 'text-green-600';
-    case 'cross-shore':
-      return 'text-yellow-600';
-    case 'cross-onshore':
-      return 'text-orange-600';
-    case 'onshore':
-      return 'text-red-600';
-    default:
-      return 'text-gray-500';
-  }
-}
-
 export function BreakCard({
   id,
   name,
   region,
-  rating,
   reportGeneratedAt,
   currentConditions,
   waveData,
 }: BreakCardProps) {
   const { unit } = useUnit();
+  const lastUpdated = currentConditions?.updatedAt
+    ? formatDistanceToNow(new Date(currentConditions.updatedAt), { addSuffix: true })
+    : reportGeneratedAt
+    ? formatDistanceToNow(new Date(reportGeneratedAt), { addSuffix: true })
+    : null;
+  const surfRange = waveData?.height !== null && waveData?.height !== undefined
+    ? formatSurfRange(waveData.height, waveData.period, unit)
+    : 'Flat';
+  const periodLabel = waveData?.period ? `${Math.round(waveData.period)}s` : '—';
+  const windSummary = currentConditions
+    ? `${formatWindSpeed(currentConditions.windSpeedKmh, unit)} ${degreesToCardinal(currentConditions.windDir)}`
+    : 'Calm / N/A';
+  const score = calculateSurfScore({
+    heightMeters: waveData?.height,
+    periodSeconds: waveData?.period,
+    windQuality: currentConditions?.windQuality ?? null,
+  });
+  const decision = scoreToDecision(score);
+  const decisionColor = toneToColor(decision.tone);
 
   return (
-    <div className="relative rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-      {/* Favorite button */}
+    <div className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-lg">
       <div className="absolute top-4 right-4">
         <FavoriteButton breakId={id} size="sm" />
       </div>
 
       <Link href={`/${id}`} className="block">
-        <div className="flex items-start justify-between pr-8">
+        <div className="flex items-start justify-between pr-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
-            <p className="text-sm text-gray-500">{region}</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{region}</p>
+            <h3 className="text-lg font-semibold text-slate-900">{name}</h3>
           </div>
           <div className="text-right">
-            <RatingBadge rating={rating} />
-            {reportGeneratedAt && (
-              <p className="mt-1 text-xs text-gray-400">
-                {formatDistanceToNow(new Date(reportGeneratedAt), { addSuffix: true })}
-              </p>
-            )}
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Score</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {score.toFixed(1)}<span className="text-base">/10</span>
+            </p>
+            <span
+              className="mt-1 inline-flex items-center justify-center rounded-full px-3 py-0.5 text-xs font-semibold"
+              style={{ backgroundColor: decisionColor, color: '#0B1F2A' }}
+            >
+              {decision.label}
+            </span>
           </div>
         </div>
 
-        {/* Wave height highlight */}
-        {waveData && waveData.height !== null && (
-          <div className="mt-3">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-blue-600">
-                {formatSurfRange(waveData.height, waveData.period, unit)}
-              </span>
-              <SwellTypeBadge type={classifySwellType(waveData.period)} size="sm" />
-              <WavePowerBadge level={calculateWavePower(waveData.height, waveData.period)?.level ?? null} size="sm" />
-            </div>
-          </div>
-        )}
+        <p className="mt-4 text-base font-medium text-slate-900">
+          {surfRange}
+          <span className="text-sm text-slate-500"> · {periodLabel} · {windSummary}</span>
+        </p>
+        <p className="mt-2 text-sm text-slate-600">{decision.description}</p>
 
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs font-medium uppercase text-gray-500">Wind</p>
-            {currentConditions ? (
-              <div className="mt-1 flex items-center gap-2">
-                <WindArrow
-                  direction={currentConditions.windDir}
-                  quality={currentConditions.windQuality}
-                  size="sm"
-                />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {formatWindSpeed(currentConditions.windSpeedKmh, unit)}{' '}
-                    {degreesToCardinal(currentConditions.windDir)}
-                  </p>
-                  <p
-                    className={`text-xs font-medium capitalize ${windQualityColor(
-                      currentConditions.windQuality
-                    )}`}
-                  >
-                    {currentConditions.windQuality?.replace('-', ' ') || 'Unknown'}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="mt-1 text-sm text-gray-400">No data</p>
-            )}
-          </div>
-
-          <div>
-            <p className="text-xs font-medium uppercase text-gray-500">Period</p>
-            {waveData && waveData.period !== null ? (
-              <p className="mt-1 text-sm font-medium text-gray-900">
-                {Math.round(waveData.period)}s
-              </p>
-            ) : (
-              <p className="mt-1 text-sm text-gray-400">-</p>
-            )}
-          </div>
-
-          {currentConditions && currentConditions.airTemp !== null && (
-            <div>
-              <p className="text-xs font-medium uppercase text-gray-500">Temp</p>
-              <p className="mt-1 text-sm font-medium text-gray-900">
-                {formatTemperature(currentConditions.airTemp, unit)}
-              </p>
-            </div>
-          )}
-
-          {currentConditions && currentConditions.gustKmh !== null && (
-            <div>
-              <p className="text-xs font-medium uppercase text-gray-500">Gusts</p>
-              <p className="mt-1 text-sm font-medium text-gray-900">
-                {formatWindSpeed(currentConditions.gustKmh, unit)}
-              </p>
-            </div>
-          )}
+        <div className="mt-4 text-xs uppercase tracking-[0.2em] text-slate-500">
+          Updated {lastUpdated ?? 'recently'}
         </div>
       </Link>
     </div>

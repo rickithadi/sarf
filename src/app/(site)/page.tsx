@@ -1,5 +1,4 @@
 import { HomePageClient } from './client';
-import { MeteoMap } from '@/components/map/MeteoMap';
 import type { GridData } from '@/app/api/map/grid/route';
 
 const VICTORIA_BOUNDS = {
@@ -72,26 +71,19 @@ export default async function HomePage() {
   const mapEnabled = process.env.NEXT_PUBLIC_ENABLE_MAP === 'true';
   const [breaks, gridData] = await Promise.all([getBreaks(), mapEnabled ? getGridData() : null]);
 
-  const breakMarkers = breaks.map((b) => ({
-    id: b.id,
-    name: b.name,
-    lat: b.lat,
-    lng: b.lng,
-  }));
+  const mapData =
+    mapEnabled && gridData && process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+      ? {
+          gridData,
+          breaks: breaks.map((b) => ({
+            id: b.id,
+            name: b.name,
+            lat: b.lat,
+            lng: b.lng,
+          })),
+          bounds: VICTORIA_BOUNDS,
+        }
+      : null;
 
-  return (
-    <div>
-      {mapEnabled && gridData && process.env.NEXT_PUBLIC_MAPBOX_TOKEN && (
-        <div className="px-4 pt-4">
-          <MeteoMap
-            gridData={gridData}
-            breaks={breakMarkers}
-            initialBounds={VICTORIA_BOUNDS}
-            height="420px"
-          />
-        </div>
-      )}
-      <HomePageClient breaks={breaks} />
-    </div>
-  );
+  return <HomePageClient breaks={breaks} mapData={mapData} />;
 }
