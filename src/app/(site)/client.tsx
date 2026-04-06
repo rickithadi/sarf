@@ -155,17 +155,18 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
           {/* Content */}
           <div className="relative z-10 w-full p-8 md:p-10 grid grid-cols-1 gap-6 items-end md:grid-cols-12 md:gap-8">
             <div className="md:col-span-8">
+              <p className="text-white/50 text-xs font-bold uppercase tracking-[0.25em] mb-3">Best Right Now</p>
+              <h2 className="font-display text-5xl font-black text-white tracking-tighter leading-none mb-2 md:text-7xl">
+                {heroData.best.name}
+              </h2>
               <div className="flex items-center gap-3 mb-4">
+                <span className="text-white/60 text-sm tracking-widest uppercase font-medium">{heroData.best.region}</span>
                 {heroDecision && (
                   <span className="px-3 py-1 text-xs font-bold rounded-full uppercase tracking-widest text-white" style={{ backgroundColor: '#5ead5c' }}>
                     {heroDecision.label}
                   </span>
                 )}
-                <span className="text-white/70 text-sm tracking-widest uppercase font-medium">{heroData.best.region}</span>
               </div>
-              <h2 className="font-display text-5xl font-black text-white tracking-tighter leading-none mb-4 md:text-7xl">
-                {heroData.best.name}
-              </h2>
               <p className="text-white/80 text-base max-w-xl leading-relaxed md:text-lg">
                 {heroData.openBreaks} of {heroData.totalBreaks} breaks live · Updated {heroLastUpdatedLabel}
               </p>
