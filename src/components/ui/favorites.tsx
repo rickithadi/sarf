@@ -33,8 +33,8 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
           setFavorites(new Set(parsed));
         }
       }
-    } catch (e) {
-      console.error('Failed to load favorites:', e);
+    } catch {
+      // ignore corrupt localStorage
     }
   }, []);
 
@@ -136,8 +136,8 @@ export function FavoriteButton({
     <button
       onClick={handleClick}
       className={cn(
-        'p-1 rounded-full transition-colors',
-        favorited ? 'text-red-500' : 'text-gray-400 hover:text-red-400',
+        'inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full transition-colors',
+        favorited ? 'text-secondary' : 'text-on-surface-variant hover:text-secondary',
         className
       )}
       aria-label={favorited ? 'Remove from favorites' : 'Add to favorites'}
@@ -194,10 +194,10 @@ export function FavoritesFilter({
     <button
       onClick={onToggle}
       className={cn(
-        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+        'inline-flex min-h-[44px] items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
         showOnlyFavorites
-          ? 'bg-red-100 text-red-700 border border-red-200'
-          : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200',
+          ? 'bg-primary text-on-primary'
+          : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high',
         className
       )}
     >

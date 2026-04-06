@@ -81,15 +81,10 @@ async function getBreakDetail(breakId: string): Promise<BreakDetail | null> {
       next: { revalidate: 60 },
     });
 
-    if (!res.ok) {
-      if (res.status === 404) return null;
-      console.error('Failed to fetch break:', res.statusText);
-      return null;
-    }
+    if (!res.ok) return null;
 
     return res.json();
-  } catch (error) {
-    console.error('Error fetching break:', error);
+  } catch {
     return null;
   }
 }
@@ -98,7 +93,7 @@ async function getGridData(): Promise<GridData | null> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   try {
     const res = await fetch(`${baseUrl}/api/map/grid`, {
-      cache: 'no-store',
+      next: { revalidate: 600 },
     });
     if (!res.ok) return null;
     return res.json();
@@ -116,15 +111,11 @@ async function getSurfReport(breakId: string): Promise<SurfReport | null> {
       cache: 'no-store',
     });
 
-    if (!res.ok) {
-      console.error('Failed to fetch report:', res.statusText);
-      return null;
-    }
+    if (!res.ok) return null;
 
     const data = await res.json();
     return data.report;
-  } catch (error) {
-    console.error('Error fetching report:', error);
+  } catch {
     return null;
   }
 }
@@ -177,8 +168,8 @@ export default async function BreakDetailPage({
           tideSummary: tideConfidence?.summary ?? null,
         },
       });
-    } catch (error) {
-      console.error('Failed to fetch surf score summary:', error);
+    } catch {
+      // surf score summary is non-critical, fail silently
     }
   }
 

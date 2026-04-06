@@ -77,16 +77,16 @@ export function UnitToggle({ className }: { className?: string }) {
     <button
       onClick={toggleUnit}
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-1 rounded-md text-sm font-medium',
-        'bg-gray-100 hover:bg-gray-200 transition-colors',
+        'inline-flex min-h-[44px] items-center gap-1 px-3 py-2 rounded-md text-sm font-medium',
+        'bg-surface-container hover:bg-surface-container-high transition-colors',
         className
       )}
     >
-      <span className={cn(unit === 'imperial' ? 'text-blue-600' : 'text-gray-400')}>
+      <span className={cn(unit === 'imperial' ? 'text-primary font-bold' : 'text-on-surface-variant')}>
         ft/kts
       </span>
-      <span className="text-gray-300">/</span>
-      <span className={cn(unit === 'metric' ? 'text-blue-600' : 'text-gray-400')}>
+      <span className="text-outline-variant">/</span>
+      <span className={cn(unit === 'metric' ? 'text-primary font-bold' : 'text-on-surface-variant')}>
         m/km/h
       </span>
     </button>
@@ -100,25 +100,27 @@ export function UnitSelector({ className }: { className?: string }) {
   const { unit, setUnit } = useUnit();
 
   return (
-    <div className={cn('inline-flex rounded-lg border border-gray-200 p-0.5', className)}>
+    <div className={cn('inline-flex rounded-lg bg-surface-container p-0.5', className)}>
       <button
         onClick={() => setUnit('imperial')}
+        aria-pressed={unit === 'imperial'}
         className={cn(
-          'px-3 py-1 rounded-md text-sm font-medium transition-colors',
+          'min-h-[44px] px-3 py-2 rounded-md text-sm font-medium transition-colors',
           unit === 'imperial'
-            ? 'bg-blue-600 text-white'
-            : 'text-gray-600 hover:text-gray-900'
+            ? 'bg-primary text-on-primary'
+            : 'text-on-surface-variant hover:text-on-surface'
         )}
       >
         ft / kts
       </button>
       <button
         onClick={() => setUnit('metric')}
+        aria-pressed={unit === 'metric'}
         className={cn(
-          'px-3 py-1 rounded-md text-sm font-medium transition-colors',
+          'min-h-[44px] px-3 py-2 rounded-md text-sm font-medium transition-colors',
           unit === 'metric'
-            ? 'bg-blue-600 text-white'
-            : 'text-gray-600 hover:text-gray-900'
+            ? 'bg-primary text-on-primary'
+            : 'text-on-surface-variant hover:text-on-surface'
         )}
       >
         m / km/h

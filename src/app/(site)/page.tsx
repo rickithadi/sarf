@@ -10,7 +10,7 @@ async function getGridData(): Promise<GridData | null> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   try {
     const res = await fetch(`${baseUrl}/api/map/grid`, {
-      cache: 'no-store',
+      next: { revalidate: 600 },
     });
     if (!res.ok) return null;
     return res.json();
@@ -44,25 +44,12 @@ async function getBreaks(): Promise<BreakData[]> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   const url = `${baseUrl}/api/breaks`;
 
-  console.log('[getBreaks] Fetching from:', url);
-
   try {
-    const res = await fetch(url, {
-      cache: 'no-store',
-    });
-
-    console.log('[getBreaks] Response status:', res.status);
-
-    if (!res.ok) {
-      console.error('[getBreaks] Failed:', res.statusText);
-      return [];
-    }
-
+    const res = await fetch(url, { next: { revalidate: 300 } });
+    if (!res.ok) return [];
     const data = await res.json();
-    console.log('[getBreaks] Got breaks:', data.breaks?.length, 'First break:', data.breaks?.[0]?.name);
     return data.breaks || [];
-  } catch (error) {
-    console.error('[getBreaks] Error:', error);
+  } catch {
     return [];
   }
 }

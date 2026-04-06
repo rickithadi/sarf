@@ -1,250 +1,274 @@
 import Link from 'next/link';
-import { format } from 'date-fns';
-
-const periodGuide = [
-  { label: '14s+', type: 'Ground Swell', description: 'Powerful, well-organized lines with long lulls.', badge: 'Best quality' },
-  { label: '10-14s', type: 'Long Period', description: 'Consistent sets with plenty of push.', badge: 'Solid surf' },
-  { label: '7-10s', type: 'Wind Swell', description: 'Locally generated energy, more frequent but less organized.', badge: 'Average' },
-  { label: '<7s', type: 'Short Chop', description: 'Disorganized, choppy surf best for grovel sessions.', badge: 'Challenging' },
-];
-
-const steepnessGuide = [
-  { label: 'Swell', value: '< 0.025', detail: 'Clean, lined-up faces — classic groundswell behavior.' },
-  { label: 'Average', value: '0.025-0.04', detail: 'Reliable conditions with manageable texture.' },
-  { label: 'Steep', value: '0.04-0.055', detail: 'Combo swells and wind bump; more variance.' },
-  { label: 'Very Steep', value: '> 0.055', detail: 'Stormy or local wind swell; short, crumbly waves.' },
-];
-
-const confidenceGuide = [
-  { label: '0-24h', confidence: '≈95%', usage: 'Dialing today’s session.' },
-  { label: '1-3d', confidence: '≈85%', usage: 'Planning the week.' },
-  { label: '3-5d', confidence: '≈70%', usage: 'Spotting trends.' },
-  { label: '5-7d', confidence: '≈55%', usage: 'General outlook.' },
-  { label: '7+d', confidence: '≈35%', usage: 'Long-range hints only.' },
-];
-
-const breakTypes = [
-  {
-    title: 'Beach breaks',
-    description: 'Shifting sandbars mean multiple peaks and changing banks. Great for learners but shape depends on sand movement.',
-  },
-  {
-    title: 'Reef breaks',
-    description: 'Rock or coral ledges create consistent takeoff zones and powerful waves—mind the depth and entry channels.',
-  },
-  {
-    title: 'Point breaks',
-    description: 'Waves wrap around a headland, focusing energy for longer rides with a defined takeoff spot.',
-  },
-];
-
-const surfChecklist = [
-  'Offshore or light winds to hold the face upright.',
-  'Primary swell 10s+ for power and longer rides.',
-  'Wave height that matches your skill level (LINEUP’s surf range shows the spread).',
-  'Low steepness / high consistency so sets are predictable.',
-  'Awareness of set waves up to ~1.7× the forecast height.',
-];
 
 export default function HowItWorksPage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <header className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-teal-50 px-6 py-10 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-sky-600">How LINEUP Works</p>
-        <h1 className="mt-3 text-4xl font-bold text-slate-900">Inside the LINEUP Forecast Engine</h1>
-        <p className="mt-4 max-w-3xl text-lg text-slate-600">
-          We turn oceanographic standards—significant wave height, swell period, steepness, and confidence modeling—into the
-          surf-specific insights you see on the dashboard. Here’s the playbook distilled from our internal forecasting guide.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-          >
-            Back to live conditions
-          </Link>
-          <Link
-            href="/docs/how-forecasting-works.md"
-            className="inline-flex items-center rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-white"
-          >
-            Read the full methodology
-          </Link>
-        </div>
-      </header>
-
-      <section className="mt-12 grid gap-6 md:grid-cols-2">
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Wave height</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Significant Wave Height & Surf Range</h2>
-          <p className="mt-3 text-slate-600">
-            LINEUP reports Significant Wave Height (Hs)—the average of the highest third of waves. About one in seven waves will
-            exceed the headline height, and sneaker sets can reach 1.7×. We convert Hs into a surf range that factors in swell
-            organization and steepness, so “3-4ft” means the majority of waves sit in that window while the biggest sets climb higher.
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-slate-600">
-            <li>• Average sets ≈ Hs</li>
-            <li>• Occasional sets ≈ 1.3 × Hs</li>
-            <li>• Sneaker sets ≈ 1.7 × Hs — keep your head on a swivel</li>
-          </ul>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Swell type</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Ground vs Wind Swell</h2>
-          <p className="mt-3 text-slate-600">
-            Distant storms send organized ground swells (14s+) with long lulls and heavy push. Local wind swells (&lt;10s) break more
-            often but lack power. When both arrive (bimodal seas) LINEUP lists each component and merges their energy so you know
-            which pulse dominates the lineup.
-          </p>
-          <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/70 p-4 text-sm text-slate-700">
-            Ground swell = long intervals + smooth faces. Wind swell = short period chop. Mixed = read both columns.
-          </div>
-        </article>
-      </section>
-
-      <section className="mt-12">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Wave period</p>
-            <h2 className="text-2xl font-semibold text-slate-900">Period quality guide</h2>
-            <p className="mt-2 max-w-2xl text-slate-600">Period controls energy. A 1m wave at 14s carries far more push than 1m at 7s.</p>
-          </div>
-        </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {periodGuide.map((item) => (
-            <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
-                  <p className="text-lg font-semibold text-slate-900">{item.type}</p>
-                </div>
-                <span className="rounded-full bg-slate-900/5 px-3 py-1 text-xs font-semibold text-slate-700">{item.badge}</span>
-              </div>
-              <p className="mt-3 text-sm text-slate-600">{item.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-12 grid gap-6 lg:grid-cols-2">
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Steepness</p>
-              <h2 className="text-2xl font-semibold text-slate-900">Clean vs choppy</h2>
-            </div>
-            <span className="text-sm font-medium text-slate-500">Steepness = height / wavelength</span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {steepnessGuide.map((row) => (
-              <div key={row.label} className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-                <div className="flex items-center justify-between text-sm font-semibold text-slate-800">
-                  <span>{row.label}</span>
-                  <span>{row.value}</span>
-                </div>
-                <p className="mt-1 text-sm text-slate-600">{row.detail}</p>
-              </div>
-            ))}
-          </div>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Wave power</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Energy &gt; height</h2>
-          <p className="mt-3 text-slate-600">
-            LINEUP’s power badge compares height and period to show how much force is in the swell. 1m @ 14s earns “High” while 1m @ 7s
-            sits in “Low.” Combine this with the surf range to judge whether it’s punchy, playful, or gutless.
-          </p>
-          <div className="mt-4 grid gap-3 text-sm text-slate-600">
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-              <p className="font-semibold text-slate-800">Epic</p>
-              <p>Maximum energy, fast-moving sets, often long-period groundswell events.</p>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-              <p className="font-semibold text-slate-800">High / Medium</p>
-              <p>Everyday surf with enough push to keep you down the line.</p>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-              <p className="font-semibold text-slate-800">Low</p>
-              <p>Short-period windswell, longboards and fish thrive here.</p>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section className="mt-12">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Forecast skill</p>
-            <h2 className="text-2xl font-semibold text-slate-900">Confidence horizon</h2>
-          </div>
-          <p className="text-sm text-slate-500">Last refreshed {format(new Date(), 'MMM d, yyyy')}</p>
-        </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-5">
-          {confidenceGuide.map((item) => (
-            <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.label}</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{item.confidence}</p>
-              <p className="mt-2 text-sm text-slate-600">{item.usage}</p>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-sm text-slate-500">
-          Accuracy climbs as you approach the surf window—refresh LINEUP the day-of for the sharpest call.
+    <div className="bg-surface text-on-surface">
+      {/* ── Hero ── */}
+      <section className="px-8 md:px-24 py-20 bg-surface flex flex-col items-start">
+        <span className="text-secondary font-bold tracking-[0.2em] uppercase text-xs mb-4">Science of the Swell</span>
+        <h1 className="font-display text-6xl md:text-8xl font-extrabold text-on-primary-fixed leading-[1.1] max-w-4xl tracking-tighter mb-8">
+          How Our Surf Forecast Works
+        </h1>
+        <p className="text-xl md:text-2xl text-on-surface-variant max-w-2xl leading-relaxed font-light">
+          We translate raw bathymetric data and oceanic atmospheric pressure into surfable reality. Precision isn&apos;t just a goal; it&apos;s our maritime standard.
         </p>
       </section>
 
-      <section className="mt-12 grid gap-6 lg:grid-cols-2">
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Consistency</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Variance bands</h2>
-          <p className="mt-3 text-slate-600">
-            LINEUP’s consistency badge converts steepness into variance: “Very consistent” is ±12%, “Inconsistent” is ±40%. Use it to
-            gauge how wide the surf range could swing.
+      {/* ── Significant Wave Height: Bento ── */}
+      <section className="px-8 md:px-24 py-16 grid grid-cols-1 md:grid-cols-12 gap-6 bg-surface-container-low">
+        {/* Left: explanation + SVG chart */}
+        <div className="md:col-span-8 bg-surface-container-lowest p-10 rounded-2xl">
+          <h2 className="font-display text-4xl font-bold text-primary mb-6">Significant Wave Height (Hs)</h2>
+          <p className="text-on-surface-variant mb-10 text-lg leading-relaxed">
+            The Hs metric represents the average height of the highest one-third of waves in a swell. This isn&apos;t just an average; it&apos;s a weighted perspective that mirrors what a seasoned observer actually sees from the shoreline.
           </p>
-          <ul className="mt-4 space-y-2 text-sm text-slate-600">
-            <li>• Very consistent: lined-up groundswells, easy set timing.</li>
-            <li>• Consistent: healthy organization with some variance.</li>
-            <li>• Variable/Inconsistent: windswell mixing or stormy seas.</li>
-          </ul>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Break types</p>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900">Know your canvas</h2>
-          <div className="mt-4 space-y-4">
-            {breakTypes.map((type) => (
-              <div key={type.title} className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3">
-                <p className="font-semibold text-slate-800">{type.title}</p>
-                <p className="text-sm text-slate-600">{type.description}</p>
-              </div>
-            ))}
+          {/* Diagram */}
+          <div className="relative h-52 w-full bg-surface-container rounded-xl overflow-hidden">
+            <svg className="absolute bottom-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 200">
+              <defs>
+                <linearGradient id="waveGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#1a60a4" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#1a60a4" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <path d="M0,150 Q100,20 200,150 T400,150 T600,80 T800,150 T1000,50" fill="none" stroke="#1a60a4" strokeWidth="4" />
+              <path d="M0,150 Q100,20 200,150 T400,150 T600,80 T800,150 T1000,50 L1000,200 L0,200 Z" fill="url(#waveGrad)" />
+            </svg>
+            <div className="absolute top-6 right-8 flex flex-col items-end">
+              <span className="font-display text-4xl font-extrabold text-primary tabular">6.5 <span className="text-base font-medium text-outline">ft</span></span>
+              <span className="text-xs uppercase tracking-widest text-secondary font-bold">Current Hs</span>
+            </div>
           </div>
-        </article>
+        </div>
+
+        {/* Right: Surf Range card */}
+        <div
+          className="md:col-span-4 p-10 rounded-2xl text-on-primary flex flex-col justify-between"
+          style={{ background: 'linear-gradient(180deg, #001e40 0%, #1a60a4 100%)' }}
+        >
+          <div>
+            <h3 className="font-display text-2xl font-bold mb-4">Surf Range</h3>
+            <p className="text-on-primary/70 leading-relaxed text-sm">
+              Our algorithm factors in local bathymetry—how the seafloor shapes the wave—to convert deep-water swell height into the actual face-height you&apos;ll encounter.
+            </p>
+          </div>
+          <div className="mt-8 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <span className="font-display text-5xl font-black block mb-2 tabular">3-5<span className="text-xl">ft</span></span>
+            <span className="text-sm tracking-widest uppercase text-on-primary/70">Estimated Break Height</span>
+          </div>
+        </div>
       </section>
 
-      <section className="mt-12 rounded-3xl border border-slate-200 bg-slate-900 px-6 py-8 text-slate-100 shadow-sm">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-300">Session checklist</p>
-        <h2 className="mt-2 text-3xl font-semibold">What makes a great LINEUP day?</h2>
-        <ul className="mt-4 space-y-3 text-base text-slate-200">
-          {surfChecklist.map((item) => (
-            <li key={item} className="flex gap-3">
-              <span>•</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            href="/"
-            className="inline-flex items-center rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-900"
-          >
-            Explore live dashboard
-          </Link>
-          <Link
-            href="/docs/how-forecasting-works.md"
-            className="inline-flex items-center rounded-full border border-white/30 px-5 py-2 text-sm font-semibold text-white"
-          >
-            Read the full methodology
-          </Link>
+      {/* ── Period Quality Guide ── */}
+      <section className="px-8 md:px-24 py-24 bg-surface">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          <div className="max-w-xl">
+            <h2 className="font-display text-4xl font-bold text-primary mb-4">Period Quality Guide</h2>
+            <p className="text-on-surface-variant">The interval between wave crests determines the energy density and the &quot;cleanliness&quot; of the sets.</p>
+          </div>
+          <span className="text-xs font-bold bg-secondary-container text-on-secondary-container px-4 py-2 rounded-full whitespace-nowrap">Essential Metric</span>
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* 4-7s */}
+          <div className="bg-surface-container-lowest p-8 rounded-2xl transition-all hover:-translate-y-1">
+            <div className="text-4xl mb-6">〰️</div>
+            <h4 className="font-display text-xl font-bold text-primary mb-2">4 – 7 Seconds</h4>
+            <span className="inline-block px-2 py-1 bg-error-container text-on-error-container text-[10px] font-bold uppercase rounded mb-4">Wind Swell</span>
+            <p className="text-sm text-on-surface-variant leading-relaxed">Choppy, disorganized waves. High frequency often results in multiple waves breaking simultaneously.</p>
+          </div>
+          {/* 8-12s */}
+          <div className="bg-surface-container-lowest p-8 rounded-2xl transition-all hover:-translate-y-1">
+            <div className="text-4xl mb-6 text-secondary">≋</div>
+            <h4 className="font-display text-xl font-bold text-primary mb-2">8 – 12 Seconds</h4>
+            <span className="inline-block px-2 py-1 bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase rounded mb-4">Transition</span>
+            <p className="text-sm text-on-surface-variant leading-relaxed">Developing power. Sets become more defined with moderate gaps between pulses.</p>
+          </div>
+          {/* 13-20s */}
+          <div className="bg-surface-container-lowest p-8 rounded-2xl transition-all hover:-translate-y-1">
+            <div className="text-4xl mb-6" style={{ color: '#5ead5c' }}>⟿</div>
+            <h4 className="font-display text-xl font-bold text-primary mb-2">13 – 20+ Seconds</h4>
+            <span className="inline-block px-2 py-1 text-[10px] font-bold uppercase rounded mb-4 text-white" style={{ backgroundColor: '#5ead5c' }}>Ground Swell</span>
+            <p className="text-sm text-on-surface-variant leading-relaxed">Elite energy. These waves have traveled thousands of miles, focusing power into massive, clean sets.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Ground Swell vs Wind Swell ── */}
+      <section className="px-8 md:px-24 py-24 bg-surface-container-high grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        {/* Left: gradient placeholder as "ocean image" */}
+        <div className="relative rounded-2xl overflow-hidden aspect-[4/5] flex flex-col justify-end"
+          style={{ background: 'linear-gradient(160deg, #1a60a4 0%, #001e40 60%, #002504 100%)' }}
+        >
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,30,64,0.8) 0%, transparent 60%)' }} />
+          <div className="relative z-10 p-10">
+            <h3 className="font-display text-3xl font-bold text-white mb-3">Ground Swell</h3>
+            <p className="text-secondary-fixed text-sm leading-relaxed">Long-distance energy generated by remote storm systems. High period, high power, structured sets.</p>
+          </div>
+        </div>
+
+        {/* Right: stacked cards */}
+        <div className="flex flex-col gap-8">
+          {/* Wind Swell */}
+          <div className="bg-surface-container-lowest p-10 rounded-2xl">
+            <h3 className="font-display text-2xl font-bold text-primary mb-4">Wind Swell</h3>
+            <p className="text-on-surface-variant mb-6 leading-relaxed">Local winds pushing the water surface. Short period, erratic, and generally weaker than ground swells.</p>
+            <div className="flex gap-4">
+              <div className="bg-surface-container p-4 rounded-xl flex-1">
+                <span className="text-[10px] uppercase font-bold text-outline block mb-1">Steepness</span>
+                <span className="font-display text-xl font-bold text-primary">High</span>
+              </div>
+              <div className="bg-surface-container p-4 rounded-xl flex-1">
+                <span className="text-[10px] uppercase font-bold text-outline block mb-1">Predictability</span>
+                <span className="font-display text-xl font-bold text-primary">Low</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pulse Ratio */}
+          <div
+            className="p-10 rounded-2xl text-on-primary"
+            style={{ background: 'linear-gradient(135deg, #001e40 0%, #1a60a4 100%)' }}
+          >
+            <div className="text-3xl mb-4">📡</div>
+            <h3 className="font-display text-2xl font-bold mb-2">The Pulse Ratio</h3>
+            <p className="text-on-primary/70 text-sm leading-relaxed">We use spectral analysis to separate overlapping swell trains, allowing you to see the ground swell hiding beneath local chop.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Wave Steepness & Technical Power ── */}
+      <section className="px-8 md:px-24 py-24 bg-surface">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="md:col-span-1">
+            <h2 className="font-display text-4xl font-extrabold text-primary leading-tight mb-6">Wave Steepness &amp; Technical Power</h2>
+            <p className="text-on-surface-variant leading-relaxed">Energy is more than height. It&apos;s the volume of water moving forward and the velocity at which it meets the reef.</p>
+          </div>
+          <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="border-l-4 border-secondary p-6 bg-surface-container-low rounded-r-xl">
+              <span className="font-display text-3xl font-black text-primary block">1,200+</span>
+              <span className="text-sm font-bold uppercase tracking-widest text-secondary">Joules/m²</span>
+              <p className="mt-4 text-xs text-on-surface-variant">Exceptional Power Level. Recommended for advanced surfers only.</p>
+            </div>
+            <div className="border-l-4 border-outline p-6 bg-surface-container-low rounded-r-xl">
+              <span className="font-display text-3xl font-black text-primary block">0.021</span>
+              <span className="text-sm font-bold uppercase tracking-widest text-outline">Steepness Ratio</span>
+              <p className="mt-4 text-xs text-on-surface-variant">Moderate verticality. Predictable breaking point on most reefs.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Set Wave Reality (dark) ── */}
+      <section className="px-8 md:px-24 py-24 bg-primary text-on-primary">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+          <div>
+            <h2 className="font-display text-4xl font-bold mb-8">The Set Wave Reality</h2>
+            <p className="text-on-primary/70 text-lg mb-8 leading-relaxed">
+              Waves don&apos;t travel alone; they travel in groups. Our &ldquo;Confidence Interval&rdquo; tracks the likelihood of consistent 5-wave sets based on wind-fetch data.
+            </p>
+            <div className="bg-primary-container p-8 rounded-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <span className="font-bold text-white">Forecast Confidence</span>
+                <span className="font-black" style={{ color: '#5ead5c' }}>92%</span>
+              </div>
+              <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                <div className="h-full w-[92%] rounded-full" style={{ backgroundColor: '#5ead5c' }} />
+              </div>
+            </div>
+          </div>
+          <div className="space-y-8">
+            <div className="flex gap-6">
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="font-display text-xl font-bold mb-2">Historical Back-Testing</h4>
+                <p className="text-on-primary/70 text-sm leading-relaxed">We compare our predictions against real-time buoy data and satellite imagery every 15 minutes to refine our models.</p>
+              </div>
+            </div>
+            <div className="flex gap-6">
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="font-display text-xl font-bold mb-2">Atmospheric Pressure</h4>
+                <p className="text-on-primary/70 text-sm leading-relaxed">Changes in barometric pressure alert our system to shifting wind patterns before they hit the coast.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Oceanic Environments ── */}
+      <section className="px-8 md:px-24 py-24 bg-surface">
+        <h2 className="font-display text-center text-4xl font-extrabold text-primary mb-16 uppercase tracking-tighter">Oceanic Environments</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Beach Break */}
+          <div className="group cursor-pointer">
+            <div className="aspect-square rounded-2xl overflow-hidden mb-4 transition-transform duration-700 group-hover:scale-[1.02]"
+              style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)' }}
+            >
+              <div className="w-full h-full flex items-end p-6"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)' }}
+              >
+                <span className="text-white text-sm font-bold uppercase tracking-widest opacity-80">Sandy Peaks</span>
+              </div>
+            </div>
+            <h5 className="font-display text-xl font-bold text-primary">Beach Break</h5>
+            <p className="text-on-surface-variant text-sm mt-2">Shifting sandbars creating versatile, ever-changing peaks.</p>
+          </div>
+
+          {/* Reef Break */}
+          <div className="group cursor-pointer">
+            <div className="aspect-square rounded-2xl overflow-hidden mb-4 transition-transform duration-700 group-hover:scale-[1.02]"
+              style={{ background: 'linear-gradient(135deg, #14b8a6 0%, #1d4ed8 100%)' }}
+            >
+              <div className="w-full h-full flex items-end p-6"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)' }}
+              >
+                <span className="text-white text-sm font-bold uppercase tracking-widest opacity-80">Coral / Rock</span>
+              </div>
+            </div>
+            <h5 className="font-display text-xl font-bold text-primary">Reef Break</h5>
+            <p className="text-on-surface-variant text-sm mt-2">Static rock or coral structures providing mechanical consistency.</p>
+          </div>
+
+          {/* Point Break */}
+          <div className="group cursor-pointer">
+            <div className="aspect-square rounded-2xl overflow-hidden mb-4 transition-transform duration-700 group-hover:scale-[1.02]"
+              style={{ background: 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)' }}
+            >
+              <div className="w-full h-full flex items-end p-6"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)' }}
+              >
+                <span className="text-white text-sm font-bold uppercase tracking-widest opacity-80">Headland Wrap</span>
+              </div>
+            </div>
+            <h5 className="font-display text-xl font-bold text-primary">Point Break</h5>
+            <p className="text-on-surface-variant text-sm mt-2">Waves wrapping around a headland, creating exceptionally long rides.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section
+        className="mx-8 md:mx-24 my-24 rounded-[2rem] p-16 text-center text-on-primary relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #1a60a4 0%, #001e40 100%)' }}
+      >
+        <h2 className="font-display text-5xl md:text-7xl font-extrabold mb-8 tracking-tight">Ready to hunt the pulse?</h2>
+        <p className="text-xl text-on-primary/70 mb-12 max-w-2xl mx-auto">
+          Stop guessing. Start surfing. Get the most accurate maritime data delivered directly to your dashboard.
+        </p>
+        <Link
+          href="/"
+          className="inline-block bg-on-primary text-primary px-12 py-5 rounded-full text-lg font-black uppercase tracking-widest transition-all hover:shadow-2xl active:scale-95"
+        >
+          See the Forecast
+        </Link>
       </section>
     </div>
   );

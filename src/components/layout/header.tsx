@@ -4,40 +4,49 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV_LINKS = [
-  { href: '/', label: 'Live dashboard' },
-  { href: '/how-it-works', label: 'How it works' },
+  { href: '/', label: 'Forecasts' },
+  { href: '/how-it-works', label: 'Ocean Science' },
+  { href: '#', label: 'Tide Charts' },
+  { href: '#', label: 'News' },
 ];
 
 export function Header() {
   const pathname = usePathname();
 
   return (
-    <header className="border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#0B1F2A] text-white text-lg font-bold">
-            L
-          </span>
-          <div>
-            <p className="text-base font-semibold text-slate-900">LINEUP</p>
-            <p className="text-xs uppercase tracking-[0.3em] text-[#2E8BC0]">Know when it’s on</p>
-          </div>
-        </Link>
-        <nav className="flex items-center gap-4 text-sm font-medium">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`rounded-full px-3 py-1 transition-colors ${
-                pathname === link.href
-                  ? 'bg-[#2E8BC0]/10 text-[#0B1F2A]'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+    <header
+      className="sticky top-0 z-50 border-none"
+      style={{ backdropFilter: 'blur(24px)', backgroundColor: 'rgba(247, 249, 251, 0.85)' }}
+    >
+      <div className="mx-auto flex items-center justify-between px-4 py-4 max-w-screen-2xl sm:px-6 xl:px-8">
+        {/* Logo */}
+        <div className="flex items-center gap-10">
+          <Link href="/" className="flex items-center">
+            <span className="text-2xl font-black tracking-tighter font-display text-primary">Lineup</span>
+          </Link>
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-8 font-display font-bold tracking-tight text-sm">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                aria-current={pathname === link.href ? 'page' : undefined}
+                className={`pb-2 transition-colors duration-200 ${
+                  pathname === link.href
+                    ? 'border-b-4 border-secondary text-primary'
+                    : 'text-[#5c708a] hover:text-secondary'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+
+        {/* Mobile: placeholder (nav handled by BottomNav) */}
+        <div className="md:hidden w-9" />
       </div>
     </header>
   );

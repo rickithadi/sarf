@@ -14,8 +14,16 @@ import { CollapsibleSection } from '@/components/ui/collapsible-section';
 // Wave quality UI components available but hidden for now
 // import { SwellTypeBadge, WavePowerIndicator, ConsistencyBadge, SetWaveEstimateCompact } from '@/components/ui/swell-quality-badge';
 import { MultidayForecast, HorizontalForecastStrip, SimplifiedForecast, type HourlyForecastData } from '@/components/forecast';
-import { WaveChart } from '@/components/forecast/wave-chart';
-import { SwellChart } from '@/components/forecast/swell-chart';
+import dynamic from 'next/dynamic';
+
+const WaveChart = dynamic(() => import('@/components/forecast/wave-chart').then(m => m.WaveChart), {
+  ssr: false,
+  loading: () => <div className="h-48 w-full animate-pulse rounded-xl bg-surface-container-high" />,
+});
+const SwellChart = dynamic(() => import('@/components/forecast/swell-chart').then(m => m.SwellChart), {
+  ssr: false,
+  loading: () => <div className="h-48 w-full animate-pulse rounded-xl bg-surface-container-high" />,
+});
 import { ConditionsOverview } from '@/components/forecast/conditions-overview';
 import { NearbySpots, calculateDistance } from '@/components/breaks/nearby-spots';
 import {
@@ -27,7 +35,10 @@ import {
 import type { WindQuality } from '@/lib/breaks/wind-quality';
 // Wave quality calculations available but hidden for now
 // import { analyzeWave, classifySwellType, calculateSetWaveEstimate } from '@/lib/utils/wave-quality';
-import { MeteoMap } from '@/components/map/MeteoMap';
+const MeteoMap = dynamic(() => import('@/components/map/MeteoMap').then(m => m.MeteoMap), {
+  ssr: false,
+  loading: () => <div className="h-full w-full animate-pulse rounded-xl bg-surface-container-high" />,
+});
 import type { GridData } from '@/app/api/map/grid/route';
 import { calculateSurfScore, scoreToDecision, toneToColor } from '@/lib/utils/surf-score';
 
@@ -176,14 +187,6 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
   const bestWindowLabel = bestWindow
     ? `${format(bestWindow.start, 'EEE h a')} – ${format(bestWindow.end, 'h a')}`
     : report?.bestTime ?? 'Not set';
-  const swellStatValue = waveData?.swellHeight
-    ? `${formatWaveHeight(waveData.swellHeight, unit, 1)} · ${waveData.swellPeriod ? `${Math.round(waveData.swellPeriod)}s` : ''}`
-    : 'Pending';
-  const swellHint = waveData?.swellDirectionCardinal ? `From ${waveData.swellDirectionCardinal}` : 'Direction pending';
-  const windStatValue = currentConditions
-    ? `${formatWindSpeed(currentConditions.windSpeedKmh, unit)} ${currentConditions.windDirCardinal}`
-    : 'Calm / N/A';
-  const windHint = currentConditions?.windQualityDescription ?? 'Wind data pending';
   const tideFactor = tideConfidence?.score ?? getHeuristicTideFavorability(tides);
   const tideLabel = tideScoreToLabel(tideConfidence?.score ?? tideFactor);
   const tideHint = tideConfidence?.summary ?? getHeuristicTideHint(tides);
@@ -208,11 +211,11 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
   const decisionColor = toneToColor(surfDecision.tone);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Back link - enhanced for better touch targets */}
+    <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 xl:px-8">
+      {/* Back link */}
       <Link
         href="/"
-        className="mb-6 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+        className="mb-6 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-surface-container-low px-4 py-2.5 text-sm font-medium text-on-surface-variant transition hover:bg-surface-container"
       >
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -221,32 +224,24 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
       </Link>
 
       {/* Header */}
-      <header className="mb-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{breakData.name}</h1>
-              <p className="mt-1 text-gray-600">{breakData.region}</p>
-            </div>
-            <FavoriteButton breakId={breakData.id} size="lg" />
+      <header className="mb-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="font-display text-4xl font-extrabold tracking-tighter text-primary md:text-5xl lg:text-6xl">{breakData.name}</h1>
+            <p className="mt-1 text-sm font-bold uppercase tracking-widest text-on-surface-variant">{breakData.region}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <UnitSelector />
             {report && <RatingBadge rating={report.rating} size="lg" />}
-            <a
-              href="mailto:team@lineup.app?subject=LINEUP%20spot%20alerts"
-              className="rounded-full border border-blue-200 bg-blue-50 px-4 py-1 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-            >
-              Get LINEUP alerts
-            </a>
+            <FavoriteButton breakId={breakData.id} size="lg" />
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl bg-[#0B1F2A] p-6 text-white shadow-sm">
+        <div className="mt-4 rounded-2xl bg-primary p-6 text-on-primary">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.4em] text-white/60">Surf score</p>
-              <p className="text-5xl font-bold leading-none">
+              <p className="font-display tabular text-5xl font-bold leading-none tracking-tight">
                 {surfScore.toFixed(1)}<span className="text-2xl">/10</span>
               </p>
               <p className="mt-2 text-sm text-white/80">{surfDescription}</p>
@@ -254,7 +249,7 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
             <div className="flex flex-col items-start gap-2 text-right sm:items-end">
               <span
                 className="inline-flex items-center rounded-full px-4 py-1 text-sm font-semibold"
-                style={{ backgroundColor: decisionColor, color: '#0B1F2A' }}
+                style={{ backgroundColor: decisionColor, color: 'rgb(var(--brand-navy))' }}
               >
                 {surfDecision.label}
               </span>
@@ -273,261 +268,444 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
         </div>
       </header>
 
-      <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <QuickStat label="Best window" value={bestWindowLabel} hint="Offshore wind + >0.5m swell" />
-        <QuickStat label="Primary swell" value={swellStatValue} hint={swellHint} />
-        <QuickStat label="Wind status" value={windStatValue} hint={windHint} />
-        <QuickStat label="Tide call" value={tideLabel} hint={tideHint} />
-      </section>
+      {/* Main 12-col grid — sidebar always visible on desktop */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
 
-      {/* Tabs - sticky below header */}
-      <div className="sticky top-0 z-40 -mx-4 bg-white px-4 pt-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <div className="border-b border-gray-200">
-          <nav className="flex gap-6">
-            {(['report', 'charts', 'guide'] as TabType[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  'min-h-[44px] px-1 pb-3 text-sm font-medium capitalize transition-colors',
-                  activeTab === tab
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
-                )}
-              >
-                {tab === 'report' ? 'Report & Forecast' : tab}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
+        {/* ── Left: main content ── */}
+        <div className="lg:col-span-8 space-y-6">
 
-      {/* Tab content */}
-      {activeTab === 'report' && (
-        <div className="space-y-6">
-          {/* AI Report */}
-          {report && (
-            <section className="rounded-lg border border-blue-100 bg-blue-50 p-6">
-              <h2 className="mb-2 text-xl font-semibold text-blue-900">{report.headline}</h2>
-              <div className="space-y-4 text-blue-800">
-                <div>
-                  <h3 className="font-medium">Current Conditions</h3>
-                  <p className="text-sm">{report.conditions}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium">Forecast</h3>
-                  <p className="text-sm">{report.forecast}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium">Best Time to Surf</h3>
-                  <p className="text-sm">{report.bestTime}</p>
-                </div>
-              </div>
-              <p className="mt-4 text-xs text-blue-600">
-                AI-generated report{report.generatedAt ? ` · ${format(new Date(report.generatedAt), 'MMM d, h:mm a')}` : ''}
-              </p>
-            </section>
-          )}
-
-          {/* 10-Day Forecast */}
-          <section id="forecast">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">10-Day Forecast</h2>
-              <button
-                onClick={() => setSelectedForecastDate(selectedForecastDate ? null : new Date())}
-                className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
-              >
-                {selectedForecastDate ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                    Simple View
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                    Detailed View
-                  </>
-                )}
-              </button>
+          {/* Cam placeholder */}
+          <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: '16/9' }}>
+            <div
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(160deg, #1a60a4 0%, #001e40 55%, #002a10 100%)' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent" />
+            {/* LIVE indicator */}
+            <div className="absolute top-4 left-4 flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-sm">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              <span className="text-xs font-bold text-white">LIVE</span>
             </div>
-            {hourlyData.length > 0 ? (
-              selectedForecastDate ? (
-                <>
-                  {/* Day selector strip */}
-                  <HorizontalForecastStrip
-                    allData={hourlyData}
-                    optimalWindDirection={breakData.optimalWindDirection}
-                    unit={unit}
-                    selectedDate={selectedForecastDate}
-                    onSelectDate={setSelectedForecastDate}
-                    className="mb-4"
-                  />
-                  {/* Detailed day forecast */}
-                  <MultidayForecast
-                    allData={hourlyData}
-                    optimalWindDirection={breakData.optimalWindDirection}
-                    unit={unit}
-                    expandFirstDay
-                    selectedDate={selectedForecastDate}
-                  />
-                </>
-              ) : (
-                /* Simplified visual forecast - default view */
-                <SimplifiedForecast
-                  data={hourlyData}
-                  tides={tides}
-                  optimalWindDirection={breakData.optimalWindDirection}
-                  unit={unit}
-                />
-              )
-            ) : (
-              <p className="text-gray-400">No forecast data available</p>
-            )}
-          </section>
-
-          {/* Current Conditions & Wave Data Grid */}
-          <div id="conditions" className="grid gap-6 md:grid-cols-2">
-            {/* Current Conditions */}
-            <CollapsibleSection title="Current Conditions" defaultOpen>
-              {currentConditions ? (
-                <dl className="space-y-3">
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Wind</dt>
-                    <dd className="font-medium text-gray-900">
-                      <WindDisplay
-                        direction={currentConditions.windDir}
-                        speedKmh={currentConditions.windSpeedKmh}
-                        quality={currentConditions.windQuality}
-                        unit={unit === 'imperial' ? 'kts' : 'kmh'}
-                      />
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Wind Quality</dt>
-                    <dd className="font-medium text-gray-900">
-                      {currentConditions.windQualityDescription}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Gusts</dt>
-                    <dd className="font-medium text-gray-900">
-                      {formatWindSpeed(currentConditions.gustKmh, unit)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Air Temp</dt>
-                    <dd className="font-medium text-gray-900">
-                      {formatTemperature(currentConditions.airTemp, unit)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Humidity</dt>
-                    <dd className="font-medium text-gray-900">
-                      {currentConditions.humidity ?? 'N/A'}%
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Pressure</dt>
-                    <dd className="font-medium text-gray-900">
-                      {currentConditions.pressure ?? 'N/A'} hPa
-                    </dd>
-                  </div>
-                  <div className="border-t border-gray-100 pt-2 text-xs text-gray-400">
-                    Updated: {format(new Date(currentConditions.updatedAt), 'h:mm a')}
-                  </div>
-                </dl>
-              ) : (
-                <p className="text-gray-400">No observation data available</p>
-              )}
-            </CollapsibleSection>
-
-            {/* Wave Data */}
-            <CollapsibleSection title="Wave Data" defaultOpen>
-              {waveData && waveData.height !== null ? (
-                <dl className="space-y-3">
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Wave Height</dt>
-                    <dd className="font-medium text-gray-900">
-                      {formatSurfRange(waveData.height, waveData.period, unit)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Wave Period</dt>
-                    <dd className="font-medium text-gray-900">{waveData.period ?? 'N/A'}s</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Wave Direction</dt>
-                    <dd className="font-medium text-gray-900">{waveData.directionCardinal}</dd>
-                  </div>
-                  <div className="border-t border-gray-100 pt-3">
-                    <h3 className="mb-2 text-sm font-medium text-gray-700">Primary Swell</h3>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-gray-500">Height</dt>
-                    <dd className="font-medium text-gray-900">
-                      <SwellDisplay
-                        heightMeters={waveData.swellHeight}
-                        periodSeconds={waveData.swellPeriod}
-                        directionDegrees={waveData.swellDirection}
-                        system={unit}
-                      />
-                    </dd>
-                  </div>
-                </dl>
-              ) : (
-                <p className="text-gray-400">No wave data available</p>
-              )}
-            </CollapsibleSection>
+            {/* Play button */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="rounded-full bg-white/20 p-4 backdrop-blur-sm">
+                <svg className="ml-1 h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            </div>
+            {/* Break name bottom-left */}
+            <div className="absolute bottom-4 left-4">
+              <p className="text-xs font-bold uppercase tracking-widest text-white/60">Live Cam</p>
+              <p className="font-bold text-white">{breakData.name}</p>
+            </div>
           </div>
 
-          {/* Tides */}
-          <CollapsibleSection id="tides" title="Upcoming Tides" defaultOpen={false}>
-            {tides.length > 0 ? (
-              <div className="flex flex-wrap gap-4">
-                {tides.map((tide, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      'rounded-lg px-4 py-2',
-                      tide.type === 'high'
-                        ? 'bg-blue-50 text-blue-800'
-                        : 'bg-gray-50 text-gray-800'
-                    )}
+          {/* Bento data strip */}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="col-span-2 rounded-xl bg-surface-container-lowest p-6 lg:col-span-2">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-on-surface-variant">Current Swell</p>
+              <p className="mt-2 font-display text-3xl font-bold tracking-tight text-on-surface">
+                {waveData?.swellHeight ? formatWaveHeight(waveData.swellHeight, unit, 1) : '—'}
+              </p>
+              <p className="mt-1 text-sm text-on-surface-variant">
+                {waveData?.swellPeriod ? `${Math.round(waveData.swellPeriod)}s period` : 'Period pending'}
+                {waveData?.swellDirectionCardinal ? ` · From ${waveData.swellDirectionCardinal}` : ''}
+              </p>
+            </div>
+            <div className="rounded-xl bg-surface-container-lowest p-6">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-on-surface-variant">Wind</p>
+              <p className="mt-2 font-display text-2xl font-bold tracking-tight text-on-surface">
+                {currentConditions ? formatWindSpeed(currentConditions.windSpeedKmh, unit) : '—'}
+              </p>
+              <p className="mt-1 text-xs text-on-surface-variant">
+                {currentConditions?.windDirCardinal ?? ''}{currentConditions?.windQualityDescription ? ` · ${currentConditions.windQualityDescription}` : ''}
+              </p>
+            </div>
+            <div className="rounded-xl bg-surface-container-lowest p-6">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-on-surface-variant">Tide</p>
+              <p className="mt-2 font-display text-2xl font-bold tracking-tight text-on-surface">{tideLabel}</p>
+              <p className="mt-1 text-xs text-on-surface-variant">{tideHint}</p>
+            </div>
+          </div>
+
+          {/* Tabs nav */}
+          <div className="sticky top-16 z-40 -mx-4 bg-surface px-4 pt-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <nav role="tablist" aria-label="Forecast sections" className="flex gap-6">
+              {(['report', 'charts', 'guide'] as TabType[]).map((tab) => (
+                <button
+                  key={tab}
+                  role="tab"
+                  id={`tab-${tab}`}
+                  aria-selected={activeTab === tab}
+                  aria-controls={`tabpanel-${tab}`}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    'min-h-[44px] px-1 pb-3 text-sm font-medium capitalize transition-colors',
+                    activeTab === tab
+                      ? 'border-b-2 border-secondary text-secondary'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  )}
+                >
+                  {tab === 'report' ? 'Forecast' : tab === 'charts' ? 'Charts' : 'Guide'}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Forecast tab */}
+          {activeTab === 'report' && (
+            <div role="tabpanel" id="tabpanel-report" aria-labelledby="tab-report" className="space-y-6">
+              {/* 10-Day Forecast */}
+              <section id="forecast">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-primary">10-Day Forecast</h2>
+                  <button
+                    onClick={() => setSelectedForecastDate(selectedForecastDate ? null : new Date())}
+                    className="inline-flex min-h-[44px] items-center gap-1 rounded-lg px-2 text-sm text-secondary transition hover:text-primary"
                   >
-                    <p className="text-xs opacity-75">{format(new Date(tide.time), 'EEE d MMM')}</p>
-                    <p className="text-sm font-medium capitalize">{tide.type}</p>
-                    <p className="text-lg font-bold">
-                      {format(new Date(tide.time), 'h:mm a')}
-                    </p>
-                    <p className="text-xs">{tide.height.toFixed(2)}m</p>
+                    {selectedForecastDate ? (
+                      <>
+                        <svg className="w-4 h-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                        </svg>
+                        Simple View
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        Detailed View
+                      </>
+                    )}
+                  </button>
+                </div>
+                {hourlyData.length > 0 ? (
+                  selectedForecastDate ? (
+                    <>
+                      <HorizontalForecastStrip
+                        allData={hourlyData}
+                        optimalWindDirection={breakData.optimalWindDirection}
+                        unit={unit}
+                        selectedDate={selectedForecastDate}
+                        onSelectDate={setSelectedForecastDate}
+                        className="mb-4"
+                      />
+                      <MultidayForecast
+                        allData={hourlyData}
+                        optimalWindDirection={breakData.optimalWindDirection}
+                        unit={unit}
+                        expandFirstDay
+                        selectedDate={selectedForecastDate}
+                      />
+                    </>
+                  ) : (
+                    <SimplifiedForecast
+                      data={hourlyData}
+                      tides={tides}
+                      optimalWindDirection={breakData.optimalWindDirection}
+                      unit={unit}
+                    />
+                  )
+                ) : (
+                  <p className="text-on-surface-variant">No forecast data available</p>
+                )}
+              </section>
+
+              {/* Morning Call — mobile only (sidebar shows it on desktop) */}
+              {report ? (
+                <section className="rounded-2xl bg-surface-container-low p-6 lg:hidden">
+                  <h2 className="mb-3 font-display text-xl font-semibold tracking-tight text-primary">{report.headline}</h2>
+                  <div className="space-y-4 text-on-surface">
+                    <div>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-secondary">Conditions</p>
+                      <p className="text-sm">{report.conditions}</p>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-secondary">Forecast</p>
+                      <p className="text-sm">{report.forecast}</p>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-secondary">Best time</p>
+                      <p className="text-sm">{report.bestTime}</p>
+                    </div>
                   </div>
-                ))}
+                  <p className="mt-4 text-xs text-on-surface-variant">
+                    LINEUP analysis{report.generatedAt ? ` · ${format(new Date(report.generatedAt), 'MMM d, h:mm a')}` : ''}
+                  </p>
+                </section>
+              ) : (
+                <section className="rounded-2xl bg-surface-container-low px-5 py-4 lg:hidden">
+                  <p className="text-sm text-on-surface-variant">Analysis is generating — check back shortly.</p>
+                </section>
+              )}
+
+              {/* Current Conditions & Wave Data */}
+              <div id="conditions" className="grid gap-6 md:grid-cols-2">
+                <CollapsibleSection title="Current Conditions" defaultOpen>
+                  {currentConditions ? (
+                    <dl className="space-y-3">
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Wind</dt>
+                        <dd className="font-medium text-on-surface">
+                          <WindDisplay
+                            direction={currentConditions.windDir}
+                            speedKmh={currentConditions.windSpeedKmh}
+                            quality={currentConditions.windQuality}
+                            unit={unit === 'imperial' ? 'kts' : 'kmh'}
+                          />
+                        </dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Wind Quality</dt>
+                        <dd className="font-medium text-on-surface">{currentConditions.windQualityDescription}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Gusts</dt>
+                        <dd className="font-medium text-on-surface">{formatWindSpeed(currentConditions.gustKmh, unit)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Air Temp</dt>
+                        <dd className="font-medium text-on-surface">{formatTemperature(currentConditions.airTemp, unit)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Humidity</dt>
+                        <dd className="font-medium text-on-surface">{currentConditions.humidity ?? 'N/A'}%</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Pressure</dt>
+                        <dd className="font-medium text-on-surface">{currentConditions.pressure ?? 'N/A'} hPa</dd>
+                      </div>
+                      <div className="pt-2 text-xs text-on-surface-variant">
+                        Updated: {format(new Date(currentConditions.updatedAt), 'h:mm a')}
+                      </div>
+                    </dl>
+                  ) : (
+                    <p className="text-on-surface-variant">No observation data available</p>
+                  )}
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Wave Data" defaultOpen>
+                  {waveData && waveData.height !== null ? (
+                    <dl className="space-y-3">
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Wave Height</dt>
+                        <dd className="font-medium text-on-surface">{formatSurfRange(waveData.height, waveData.period, unit)}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Wave Period</dt>
+                        <dd className="font-medium text-on-surface">{waveData.period ?? 'N/A'}s</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Wave Direction</dt>
+                        <dd className="font-medium text-on-surface">{waveData.directionCardinal}</dd>
+                      </div>
+                      <div className="pt-3">
+                        <h3 className="mb-2 text-sm font-medium text-on-surface">Primary Swell</h3>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="text-on-surface-variant">Height</dt>
+                        <dd className="font-medium text-on-surface">
+                          <SwellDisplay
+                            heightMeters={waveData.swellHeight}
+                            periodSeconds={waveData.swellPeriod}
+                            directionDegrees={waveData.swellDirection}
+                            system={unit}
+                          />
+                        </dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <p className="text-on-surface-variant">No wave data available</p>
+                  )}
+                </CollapsibleSection>
               </div>
-            ) : (
-              <p className="text-gray-400">No tide data available</p>
-            )}
-          </CollapsibleSection>
 
-          {/* Nearby Spots */}
-          {nearbyWithDistance.length > 0 && (
-            <NearbySpots
-              spots={nearbyWithDistance}
-              currentSpotId={breakData.id}
-              unit={unit}
-            />
+              {/* Tides */}
+              <CollapsibleSection id="tides" title="Upcoming Tides" defaultOpen={false}>
+                {tides.length > 0 ? (
+                  <div className="flex flex-wrap gap-4">
+                    {tides.map((tide, i) => (
+                      <div
+                        key={i}
+                        className={cn(
+                          'rounded-lg px-4 py-2',
+                          tide.type === 'high'
+                            ? 'bg-brand-ocean/10 text-primary'
+                            : 'bg-surface-container text-on-surface'
+                        )}
+                      >
+                        <p className="text-xs opacity-75">{format(new Date(tide.time), 'EEE d MMM')}</p>
+                        <p className="text-sm font-medium capitalize">{tide.type}</p>
+                        <p className="text-lg font-bold">{format(new Date(tide.time), 'h:mm a')}</p>
+                        <p className="text-xs">{tide.height.toFixed(2)}m</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-on-surface-variant">No tide data available</p>
+                )}
+              </CollapsibleSection>
+
+              {/* Nearby Spots */}
+              {nearbyWithDistance.length > 0 && (
+                <NearbySpots
+                  spots={nearbyWithDistance}
+                  currentSpotId={breakData.id}
+                  unit={unit}
+                />
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {activeTab === 'charts' && (
-        <div id="charts" className="space-y-6">
-          {/* Meteorological Map */}
+          {/* Charts tab */}
+          {activeTab === 'charts' && (
+            <div role="tabpanel" id="tabpanel-charts" aria-labelledby="tab-charts" className="space-y-6">
+              {/* Wave Height Chart */}
+              <section className="rounded-2xl bg-surface-container-lowest p-6">
+                <h2 className="mb-4 text-lg font-bold text-on-surface">Wave Height Forecast</h2>
+                {chartData.length > 0 ? (
+                  <WaveChart data={chartData} unit={unit} height={200} />
+                ) : (
+                  <p className="text-on-surface-variant">No wave data available</p>
+                )}
+              </section>
+
+              {/* Swell Analysis Chart */}
+              <section className="rounded-2xl bg-surface-container-lowest p-6">
+                <h2 className="mb-4 text-lg font-bold text-on-surface">Swell Analysis</h2>
+                {hourlyData.length > 0 ? (
+                  <SwellChart data={hourlyData} unit={unit} />
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="text-center p-4 bg-surface-container-high rounded-xl">
+                      <p className="font-display tabular text-2xl font-bold text-secondary">
+                        {waveData?.swellPeriod ? `${Math.round(waveData.swellPeriod)}s` : 'N/A'}
+                      </p>
+                      <p className="text-sm text-on-surface-variant">Primary Swell Period</p>
+                    </div>
+                    <div className="text-center p-4 bg-surface-container-high rounded-xl">
+                      <p className="font-display tabular text-2xl font-bold text-secondary">
+                        {waveData?.swellHeight ? formatWaveHeight(waveData.swellHeight, unit) : 'N/A'}
+                      </p>
+                      <p className="text-sm text-on-surface-variant">Primary Swell Height</p>
+                    </div>
+                    <div className="text-center p-4 bg-surface-container-high rounded-xl">
+                      <p className="font-display tabular text-2xl font-bold text-secondary">
+                        {waveData?.swellDirectionCardinal ?? 'N/A'}
+                      </p>
+                      <p className="text-sm text-on-surface-variant">Swell Direction</p>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              {/* Conditions Overview */}
+              <section className="rounded-2xl bg-surface-container-lowest p-6">
+                <h2 className="mb-4 text-lg font-semibold text-on-surface">Conditions Overview</h2>
+                {hourlyData.length > 0 ? (
+                  <ConditionsOverview
+                    hourlyData={hourlyData}
+                    tides={tides}
+                    optimalWindDirection={breakData.optimalWindDirection}
+                    unit={unit}
+                  />
+                ) : (
+                  <p className="text-on-surface-variant">No forecast data available</p>
+                )}
+              </section>
+            </div>
+          )}
+
+          {/* Guide tab */}
+          {activeTab === 'guide' && (
+            <div role="tabpanel" id="tabpanel-guide" aria-labelledby="tab-guide" className="space-y-6">
+              <CollapsibleSection title="Break Information" defaultOpen>
+                <dl className="space-y-4">
+                  <div>
+                    <dt className="text-sm font-medium text-on-surface-variant">Location</dt>
+                    <dd className="mt-1 text-on-surface">
+                      {breakData.lat.toFixed(4)}°S, {Math.abs(breakData.lng).toFixed(4)}°E
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-on-surface-variant">Region</dt>
+                    <dd className="mt-1 text-on-surface">{breakData.region}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-on-surface-variant">Optimal Wind Direction</dt>
+                    <dd className="mt-1 text-on-surface">
+                      {breakData.optimalWindDirection}° ({getCardinalFromDegrees(breakData.optimalWindDirection)})
+                    </dd>
+                  </div>
+                </dl>
+              </CollapsibleSection>
+
+              <CollapsibleSection title="Best Conditions" defaultOpen>
+                <ul className="space-y-2 text-on-surface">
+                  {[
+                    `Offshore winds from ${getCardinalFromDegrees(breakData.optimalWindDirection)}`,
+                    'Swell period 10+ seconds',
+                    'Wave height 0.8-2.5m',
+                    'Mid to low tide',
+                  ].map((item) => (
+                    <li key={item} className="flex items-center gap-2">
+                      <svg className="w-5 h-5 flex-shrink-0 text-on-tertiary-container" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleSection>
+            </div>
+          )}
+
+        </div>{/* end lg:col-span-8 */}
+
+        {/* ── Desktop Sidebar — always visible ── */}
+        <aside className="hidden lg:block lg:col-span-4 space-y-6">
+          {/* Morning Call */}
+          {report ? (
+            <div className="rounded-2xl bg-primary p-8 text-on-primary shadow-[0_20px_40px_rgba(0,30,64,0.12)]">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-extrabold tracking-tighter">Morning Call</h2>
+                <svg className="w-8 h-8 text-secondary-container opacity-70" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2c-5.33 4.55-8 8.48-8 11.8 0 4.98 3.8 8.2 8 8.2s8-3.22 8-8.2c0-3.32-2.67-7.25-8-11.8z"/>
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold leading-tight mb-4">{report.headline}</h3>
+              <div className="space-y-4 text-sm text-primary-fixed-dim leading-relaxed">
+                <div>
+                  <p className="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Conditions</p>
+                  <p>{report.conditions}</p>
+                </div>
+                <div>
+                  <p className="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Forecast</p>
+                  <p>{report.forecast}</p>
+                </div>
+                <div>
+                  <p className="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Best time</p>
+                  <p>{report.bestTime}</p>
+                </div>
+              </div>
+              <p className="mt-6 text-[0.625rem] text-white/30" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
+                LINEUP analysis{report.generatedAt ? ` · ${format(new Date(report.generatedAt), 'MMM d, h:mm a')}` : ''}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-primary p-8 text-on-primary">
+              <p className="text-sm text-white/60">Analysis is generating — check back shortly.</p>
+            </div>
+          )}
+
+          {/* Map */}
           {gridData && process.env.NEXT_PUBLIC_MAPBOX_TOKEN && (
-            <section className="rounded-lg border border-gray-200 overflow-hidden">
+            <div className="rounded-2xl bg-surface-container-lowest overflow-hidden">
+              <div className="px-5 pt-5 pb-3">
+                <h3 className="text-sm font-black uppercase tracking-widest text-primary">Regional Map</h3>
+              </div>
               <MeteoMap
                 gridData={gridData}
                 breaks={[{ id: breakData.id, name: breakData.name, lat: breakData.lat, lng: breakData.lng }]}
@@ -535,135 +713,39 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
                   sw: [breakData.lat - 3, breakData.lng - 4],
                   ne: [breakData.lat + 3, breakData.lng + 4],
                 }}
-                height="380px"
+                height="260px"
               />
-            </section>
+            </div>
           )}
 
+          {/* Score Breakdown */}
           {scoreBreakdown && (
-            <section className="rounded-lg border border-gray-200 bg-white p-6">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">Score Drivers</h2>
-              <ScoreRing
-                breakdown={scoreBreakdown}
-                decision={surfDecision}
-              />
-            </section>
+            <div className="rounded-2xl bg-surface-container-high p-6">
+              <h3 className="text-sm font-black uppercase tracking-widest text-primary mb-4">Score Drivers</h3>
+              <ScoreRing breakdown={scoreBreakdown} decision={surfDecision} />
+            </div>
           )}
 
-          {/* Wave Height Chart */}
-          <section className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Wave Height Forecast</h2>
-            {chartData.length > 0 ? (
-              <WaveChart data={chartData} unit={unit} height={200} />
-            ) : (
-              <p className="text-gray-400">No wave data available</p>
-            )}
-          </section>
+          {/* Spot Analytics */}
+          <div className="rounded-2xl bg-surface-container-high p-6 space-y-6">
+            <h3 className="text-sm font-black uppercase tracking-widest text-primary pb-4" style={{ borderBottom: '1px solid #c3c6d1' }}>Spot Analytics</h3>
+            <div>
+              <span className="text-[0.6875rem] font-bold text-outline uppercase block">Optimal Wind</span>
+              <span className="text-sm font-bold text-primary">{getCardinalFromDegrees(breakData.optimalWindDirection)} (Offshore)</span>
+            </div>
+            <div>
+              <span className="text-[0.6875rem] font-bold text-outline uppercase block">Best Window</span>
+              <span className="text-sm font-bold text-primary">{bestWindowLabel}</span>
+            </div>
+            <div>
+              <span className="text-[0.6875rem] font-bold text-outline uppercase block">Tide Factor</span>
+              <span className="text-sm font-bold text-primary">{tideLabel}</span>
+            </div>
+          </div>
+        </aside>
 
-          {/* Swell Analysis Chart */}
-          <section className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Swell Analysis</h2>
-            {hourlyData.length > 0 ? (
-              <SwellChart data={hourlyData} unit={unit} />
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {waveData?.swellPeriod ? `${Math.round(waveData.swellPeriod)}s` : 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-500">Primary Swell Period</p>
-                </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {waveData?.swellHeight ? formatWaveHeight(waveData.swellHeight, unit) : 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-500">Primary Swell Height</p>
-                </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {waveData?.swellDirectionCardinal ?? 'N/A'}
-                  </p>
-                  <p className="text-sm text-gray-500">Swell Direction</p>
-                </div>
-              </div>
-            )}
-          </section>
+      </div>{/* end 12-col grid */}
 
-          {/* Conditions Overview */}
-          <section className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Conditions Overview</h2>
-            {hourlyData.length > 0 ? (
-              <ConditionsOverview
-                hourlyData={hourlyData}
-                tides={tides}
-                optimalWindDirection={breakData.optimalWindDirection}
-                unit={unit}
-              />
-            ) : (
-              <p className="text-gray-400">No forecast data available</p>
-            )}
-          </section>
-        </div>
-      )}
-
-      {activeTab === 'guide' && (
-        <div className="space-y-6">
-          {/* Break Info */}
-          <CollapsibleSection title="Break Information" defaultOpen>
-            <dl className="space-y-4">
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Location</dt>
-                <dd className="mt-1 text-gray-900">
-                  {breakData.lat.toFixed(4)}°S, {Math.abs(breakData.lng).toFixed(4)}°E
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Region</dt>
-                <dd className="mt-1 text-gray-900">{breakData.region}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500">Optimal Wind Direction</dt>
-                <dd className="mt-1 text-gray-900">
-                  {breakData.optimalWindDirection}° (
-                  {getCardinalFromDegrees(breakData.optimalWindDirection)})
-                </dd>
-              </div>
-            </dl>
-          </CollapsibleSection>
-
-          {/* Best Conditions */}
-          <CollapsibleSection title="Best Conditions" defaultOpen>
-            <ul className="space-y-2 text-gray-700">
-              <li className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Offshore winds from {getCardinalFromDegrees(breakData.optimalWindDirection)}
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Swell period 10+ seconds
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Wave height 0.8-2.5m
-              </li>
-              <li className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Mid to low tide
-              </li>
-            </ul>
-          </CollapsibleSection>
-        </div>
-      )}
-
-      {/* Scroll to top button */}
       <ScrollToTop />
     </div>
   );
@@ -673,16 +755,6 @@ function getCardinalFromDegrees(degrees: number): string {
   const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
-}
-
-function QuickStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-xl border border-[#2E8BC0]/30 bg-white px-4 py-3 shadow-sm">
-      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-900">{value}</p>
-      {hint && <p className="text-xs text-slate-500">{hint}</p>}
-    </div>
-  );
 }
 
 function tideScoreToLabel(score: number) {
@@ -742,12 +814,12 @@ function ScoreRing({
   decision: ReturnType<typeof scoreToDecision>;
 }) {
   const progress = (breakdown.total / 10) * 100;
-  const gradient = `conic-gradient(#2E8BC0 ${progress}%, #e2e8f0 ${progress}% 100%)`;
+  const gradient = `conic-gradient(#1a60a4 ${progress}%, #e6e8ea ${progress}% 100%)`;
   const contributions = [
-    { label: 'Swell', value: breakdown.swell / 4, color: '#2E8BC0' },
-    { label: 'Period', value: breakdown.period / 3, color: '#0B7285' },
-    { label: 'Wind', value: breakdown.wind / 3, color: '#4CAF50' },
-    { label: 'Tide', value: breakdown.tide / 1.5, color: '#F4D35E' },
+    { label: 'Swell', value: breakdown.swell / 4, color: '#1a60a4' },
+    { label: 'Period', value: breakdown.period / 3, color: '#004883' },
+    { label: 'Wind', value: breakdown.wind / 3, color: '#5ead5c' },
+    { label: 'Tide', value: breakdown.tide / 1.5, color: '#a7c8ff' },
   ];
 
   return (
@@ -757,15 +829,15 @@ function ScoreRing({
           className="relative h-48 w-48 rounded-full p-4"
           style={{ background: gradient }}
         >
-          <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white shadow-inner">
-            <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Score</p>
-            <p className="text-4xl font-bold text-slate-900">
+          <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-surface-container-lowest shadow-inner">
+            <p className="text-xs uppercase tracking-[0.4em] text-on-surface-variant">Score</p>
+            <p className="font-display tabular text-4xl font-bold text-on-surface tracking-tight">
               {breakdown.total.toFixed(1)}
-              <span className="text-base text-slate-500">/10</span>
+              <span className="text-base text-on-surface-variant">/10</span>
             </p>
             <span
               className="mt-2 rounded-full px-3 py-0.5 text-xs font-semibold"
-              style={{ backgroundColor: toneToColor(decision.tone), color: '#0B1F2A' }}
+              style={{ backgroundColor: toneToColor(decision.tone), color: 'rgb(var(--brand-navy))' }}
             >
               {decision.label}
             </span>
@@ -775,11 +847,11 @@ function ScoreRing({
       <div className="flex-1 space-y-3">
         {contributions.map((c) => (
           <div key={c.label}>
-            <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+            <div className="flex items-center justify-between text-sm font-medium text-on-surface">
               <span>{c.label}</span>
               <span>{Math.round(c.value * 100)}%</span>
             </div>
-            <div className="mt-1 h-2 rounded-full bg-slate-200">
+            <div className="mt-1 h-2 rounded-full bg-surface-container-high">
               <div
                 className="h-2 rounded-full"
                 style={{ width: `${Math.min(c.value, 1) * 100}%`, backgroundColor: c.color }}

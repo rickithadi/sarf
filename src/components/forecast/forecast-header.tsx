@@ -28,12 +28,12 @@ export function ForecastHeader({
 
   return (
     <div className={cn(
-      'flex flex-wrap items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg',
+      'flex flex-wrap items-center gap-4 p-4 bg-surface-container-high rounded-xl',
       className
     )}>
       {/* Date */}
       <div className="flex items-center gap-2">
-        <span className="text-lg font-semibold text-gray-900">
+        <span className="text-lg font-semibold text-on-surface">
           {format(date, 'EEEE, MMMM d')}
         </span>
       </div>
@@ -43,7 +43,7 @@ export function ForecastHeader({
         {sunrise && (
           <div className="flex items-center gap-1.5">
             <SunriseIcon className="w-5 h-5 text-orange-500" />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-on-surface-variant">
               {format(sunrise, 'h:mm a')}
             </span>
           </div>
@@ -53,7 +53,7 @@ export function ForecastHeader({
         {sunset && (
           <div className="flex items-center gap-1.5">
             <SunsetIcon className="w-5 h-5 text-orange-600" />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-on-surface-variant">
               {format(sunset, 'h:mm a')}
             </span>
           </div>
@@ -70,7 +70,7 @@ export function ForecastHeader({
         {waterTemp !== null && waterTemp !== undefined && (
           <div className="flex items-center gap-1.5">
             <WaterIcon className="w-5 h-5 text-blue-500" />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-on-surface-variant">
               {waterTemp.toFixed(0)}°C
             </span>
           </div>
@@ -91,16 +91,16 @@ function UVBadge({
   value: number;
 }) {
   const colors = {
-    low: 'bg-green-100 text-green-700 border-green-200',
-    moderate: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    high: 'bg-orange-100 text-orange-700 border-orange-200',
-    'very-high': 'bg-red-100 text-red-700 border-red-200',
-    extreme: 'bg-purple-100 text-purple-700 border-purple-200',
+    low: 'bg-tertiary-container/30 text-on-tertiary-container',
+    moderate: 'bg-secondary-container/30 text-on-secondary',
+    high: 'bg-error-container/50 text-on-error-container',
+    'very-high': 'bg-error/20 text-error',
+    extreme: 'bg-error/30 text-error',
   };
 
   return (
     <div className={cn(
-      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-medium',
+      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
       colors[level]
     )}>
       <SunIcon className="w-3.5 h-3.5" />

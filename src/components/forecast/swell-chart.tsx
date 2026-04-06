@@ -26,6 +26,7 @@ import {
   type SteepnessCategory,
 } from '@/lib/utils/wave-quality';
 import type { HourlyForecastData } from './hourly-table';
+import { periodQualityColors, swellTypeColors, chartUiColors } from './chart-colors';
 
 interface SwellChartProps {
   data: HourlyForecastData[];
@@ -64,34 +65,12 @@ function getPeriodQuality(period: number | null): 'excellent' | 'good' | 'averag
  * Get color based on period quality
  */
 function getPeriodColor(quality: 'excellent' | 'good' | 'average' | null): string {
-  switch (quality) {
-    case 'excellent':
-      return '#10B981'; // emerald-500
-    case 'good':
-      return '#22C55E'; // green-500
-    case 'average':
-      return '#F59E0B'; // amber-500
-    default:
-      return '#6B7280'; // gray-500
-  }
+  return periodQualityColors[quality ?? 'default'];
 }
 
-/**
- * Get swell type color for display
- */
 function getSwellTypeColor(type: SwellType | null): string {
-  switch (type) {
-    case 'ground-swell':
-      return '#10B981'; // emerald-500
-    case 'long-period':
-      return '#3B82F6'; // blue-500
-    case 'wind-swell':
-      return '#F59E0B'; // amber-500
-    case 'short-chop':
-      return '#EF4444'; // red-500
-    default:
-      return '#6B7280'; // gray-500
-  }
+  if (!type) return swellTypeColors.default;
+  return swellTypeColors[type] ?? swellTypeColors.default;
 }
 
 /**
@@ -113,13 +92,13 @@ function SwellTooltip({
   const qualityLabel = periodQuality === 'excellent' ? 'Excellent' : periodQuality === 'good' ? 'Good' : 'Average';
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg">
-      <p className="mb-1 text-sm font-medium text-gray-900">
+    <div className="rounded-xl bg-surface-container-lowest px-3 py-2 shadow-[0_20px_40px_rgba(0,30,64,0.12)]">
+      <p className="mb-1 text-sm font-medium text-on-surface">
         {format(data.time, 'EEE, MMM d')} at {format(data.time, 'h:mm a')}
       </p>
       <div className="space-y-1 text-sm">
         {data.swellHeightDisplay !== null && (
-          <p className="text-blue-600">
+          <p className="text-secondary">
             Swell Height: <span className="font-medium">
               {data.swellHeightDisplay.toFixed(1)}{unit === 'imperial' ? 'ft' : 'm'}
             </span>
@@ -137,7 +116,7 @@ function SwellTooltip({
           </p>
         )}
         {data.steepnessCategory !== null && (
-          <p className="text-gray-600">
+          <p className="text-on-surface-variant">
             <span className="text-xs">{getSteepnessDescription(data.steepnessCategory)}</span>
           </p>
         )}
@@ -207,7 +186,7 @@ export function SwellChart({
 
   if (chartData.points.length === 0) {
     return (
-      <div className={cn('flex items-center justify-center h-32 text-gray-400', className)}>
+      <div className={cn('flex items-center justify-center h-32 text-on-surface-variant', className)}>
         No swell data available
       </div>
     );
@@ -220,22 +199,22 @@ export function SwellChart({
     <div className={cn('w-full', className)}>
       {/* Swell type legend */}
       <div className="mb-3 flex flex-wrap items-center gap-4 text-xs">
-        <span className="text-gray-500">Swell Type:</span>
+        <span className="text-on-surface-variant">Swell Type:</span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="text-gray-600">Ground Swell (14s+)</span>
+          <span className="text-on-surface-variant">Ground Swell (14s+)</span>
         </span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-blue-500" />
-          <span className="text-gray-600">Long Period (10-14s)</span>
+          <span className="text-on-surface-variant">Long Period (10-14s)</span>
         </span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-amber-500" />
-          <span className="text-gray-600">Wind Swell (7-10s)</span>
+          <span className="text-on-surface-variant">Wind Swell (7-10s)</span>
         </span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-red-500" />
-          <span className="text-gray-600">Short Chop (&lt;7s)</span>
+          <span className="text-on-surface-variant">Short Chop (&lt;7s)</span>
         </span>
       </div>
 
@@ -249,21 +228,21 @@ export function SwellChart({
             y1={12}
             y2={chartData.maxPeriod}
             yAxisId="period"
-            fill="#10B981"
+            fill={periodQualityColors.excellent}
             fillOpacity={0.1}
           />
           <ReferenceArea
             y1={10}
             y2={12}
             yAxisId="period"
-            fill="#22C55E"
+            fill={periodQualityColors.good}
             fillOpacity={0.1}
           />
           <ReferenceArea
             y1={0}
             y2={10}
             yAxisId="period"
-            fill="#F59E0B"
+            fill={periodQualityColors.average}
             fillOpacity={0.08}
           />
 
@@ -277,9 +256,9 @@ export function SwellChart({
               if (hour === 6 || hour === 12 || hour === 18) return format(time, 'ha');
               return '';
             }}
-            tick={{ fontSize: 11, fill: '#6B7280' }}
+            tick={{ fontSize: 11, fill: chartUiColors.axis }}
             tickLine={false}
-            axisLine={{ stroke: '#E5E7EB' }}
+            axisLine={{ stroke: chartUiColors.grid }}
             interval="preserveStartEnd"
           />
 
@@ -289,14 +268,14 @@ export function SwellChart({
             orientation="left"
             domain={[0, chartData.maxHeight * 1.1]}
             tickFormatter={(value: number) => `${value.toFixed(1)}`}
-            tick={{ fontSize: 11, fill: '#3B82F6' }}
+            tick={{ fontSize: 11, fill: chartUiColors.waveHeight }}
             tickLine={false}
             axisLine={false}
             label={{
               value: unit === 'imperial' ? 'Height (ft)' : 'Height (m)',
               angle: -90,
               position: 'insideLeft',
-              style: { fontSize: 11, fill: '#3B82F6' },
+              style: { fontSize: 11, fill: chartUiColors.waveHeight },
             }}
           />
 
@@ -306,14 +285,14 @@ export function SwellChart({
             orientation="right"
             domain={[0, chartData.maxPeriod * 1.1]}
             tickFormatter={(value: number) => `${value}s`}
-            tick={{ fontSize: 11, fill: '#10B981' }}
+            tick={{ fontSize: 11, fill: chartUiColors.swellHeight }}
             tickLine={false}
             axisLine={false}
             label={{
               value: 'Period (s)',
               angle: 90,
               position: 'insideRight',
-              style: { fontSize: 11, fill: '#10B981' },
+              style: { fontSize: 11, fill: chartUiColors.swellHeight },
             }}
           />
 
@@ -323,7 +302,7 @@ export function SwellChart({
             verticalAlign="top"
             height={30}
             formatter={(value: string) => (
-              <span className="text-xs text-gray-600">{value}</span>
+              <span className="text-xs text-on-surface-variant">{value}</span>
             )}
           />
 
@@ -332,7 +311,7 @@ export function SwellChart({
             <ReferenceLine
               key={i}
               x={time.getTime()}
-              stroke="#D1D5DB"
+              stroke={chartUiColors.gridLine}
               strokeDasharray="3 3"
               yAxisId="height"
             />
@@ -342,14 +321,14 @@ export function SwellChart({
           {chartData.points.length > 0 && now >= chartData.points[0].time && now <= chartData.points[chartData.points.length - 1].time && (
             <ReferenceLine
               x={now.getTime()}
-              stroke="#EF4444"
+              stroke={chartUiColors.today}
               strokeWidth={1.5}
               strokeDasharray="4 2"
               yAxisId="height"
               label={{
                 value: 'Now',
                 position: 'top',
-                fill: '#EF4444',
+                fill: chartUiColors.today,
                 fontSize: 10,
               }}
             />
@@ -360,12 +339,12 @@ export function SwellChart({
             yAxisId="height"
             type="monotone"
             dataKey="swellHeightDisplay"
-            stroke="#3B82F6"
+            stroke={chartUiColors.waveHeight}
             strokeWidth={2}
             fill="url(#swellHeightGradient)"
             name="Swell Height"
             dot={false}
-            activeDot={{ r: 4, fill: '#3B82F6' }}
+            activeDot={{ r: 4, fill: chartUiColors.waveHeight }}
           />
 
           {/* Period line with dynamic coloring */}
@@ -373,7 +352,7 @@ export function SwellChart({
             yAxisId="period"
             type="monotone"
             dataKey="swellPeriod"
-            stroke="#10B981"
+            stroke={chartUiColors.swellHeight}
             strokeWidth={2}
             name="Swell Period"
             dot={(props) => {
@@ -392,14 +371,14 @@ export function SwellChart({
                 />
               );
             }}
-            activeDot={{ r: 5, stroke: '#10B981', strokeWidth: 2, fill: 'white' }}
+            activeDot={{ r: 5, stroke: chartUiColors.swellHeight, strokeWidth: 2, fill: 'white' }}
           />
 
           {/* Gradient definition */}
           <defs>
             <linearGradient id="swellHeightGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05} />
+              <stop offset="5%" stopColor={chartUiColors.waveHeight} stopOpacity={0.3} />
+              <stop offset="95%" stopColor={chartUiColors.waveHeight} stopOpacity={0.05} />
             </linearGradient>
           </defs>
         </ComposedChart>

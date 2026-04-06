@@ -55,11 +55,23 @@ export function scoreToDecision(score: number) {
 export function toneToColor(tone: 'good' | 'okay' | 'poor') {
   switch (tone) {
     case 'good':
-      return '#4CAF50';
+      return 'var(--surf-good)';
     case 'okay':
-      return '#F4D35E';
+      return 'var(--surf-okay)';
     case 'poor':
     default:
-      return '#E63946';
+      return 'var(--surf-poor)';
+  }
+}
+
+export function toneToSurface(tone: 'good' | 'okay' | 'poor') {
+  switch (tone) {
+    case 'good':
+      return 'color-mix(in oklch, var(--surf-good) 12%, white 88%)';
+    case 'okay':
+      return 'color-mix(in oklch, var(--surf-okay) 16%, white 84%)';
+    case 'poor':
+    default:
+      return 'color-mix(in oklch, var(--surf-poor) 10%, white 90%)';
   }
 }

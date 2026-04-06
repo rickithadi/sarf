@@ -71,10 +71,10 @@ export function HorizontalForecastStrip({
       {canScrollLeft && (
         <button
           onClick={() => scroll('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white/90 rounded-full shadow-md hover:bg-white transition-colors"
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-surface-container-lowest/90 rounded-full shadow-[0_4px_12px_rgba(0,30,64,0.1)] hover:bg-surface-container-lowest transition-colors"
           aria-label="Scroll left"
         >
-          <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-on-surface-variant" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
@@ -97,17 +97,17 @@ export function HorizontalForecastStrip({
               key={day.date.toISOString()}
               onClick={() => onSelectDate?.(day.date)}
               className={cn(
-                'flex-shrink-0 w-24 rounded-lg border transition-all',
+                'flex-shrink-0 w-24 rounded-xl transition-all',
                 isSelected
-                  ? 'bg-slate-800 border-slate-800 text-white'
-                  : 'bg-white border-gray-200 hover:border-gray-300 text-gray-900'
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container'
               )}
             >
               {/* Day label */}
               <div className="px-2 pt-2 pb-1">
                 <p className={cn(
                   'text-xs font-medium',
-                  isSelected ? 'text-gray-300' : 'text-gray-500'
+                  isSelected ? 'text-on-primary/60' : 'text-on-surface-variant'
                 )}>
                   {day.label}
                 </p>
@@ -117,7 +117,7 @@ export function HorizontalForecastStrip({
               <div className="px-2 pb-1">
                 <p className={cn(
                   'text-lg font-bold',
-                  isSelected ? 'text-white' : 'text-gray-900'
+                  isSelected ? 'text-on-primary' : 'text-on-surface'
                 )}>
                   {day.waveRange}
                 </p>
@@ -131,7 +131,7 @@ export function HorizontalForecastStrip({
                     direction={dir}
                     quality={null}
                     size="xs"
-                    className={isSelected ? 'text-gray-300' : 'text-gray-500'}
+                    className={isSelected ? 'text-on-primary/60' : 'text-on-surface-variant'}
                   />
                 ))}
               </div>
@@ -154,10 +154,10 @@ export function HorizontalForecastStrip({
       {canScrollRight && (
         <button
           onClick={() => scroll('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white/90 rounded-full shadow-md hover:bg-white transition-colors"
+          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-surface-container-lowest/90 rounded-full shadow-[0_4px_12px_rgba(0,30,64,0.1)] hover:bg-surface-container-lowest transition-colors"
           aria-label="Scroll right"
         >
-          <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-on-surface-variant" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>

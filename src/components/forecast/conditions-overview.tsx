@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils';
 import { metersToFeet, kmhToKnots, type UnitSystem } from '@/lib/utils/units';
 import { calculateWindQuality, type WindQuality } from '@/lib/breaks/wind-quality';
+import { windQualityColors, chartUiColors } from './chart-colors';
 import type { HourlyForecastData } from './hourly-table';
 
 interface TideData {
@@ -58,20 +59,8 @@ interface ChartDataPoint {
  * Get color based on wind quality
  */
 function getWindQualityColor(quality: WindQuality | null): string {
-  switch (quality) {
-    case 'offshore':
-      return '#10B981'; // emerald-500
-    case 'cross-offshore':
-      return '#22C55E'; // green-500
-    case 'cross-shore':
-      return '#EAB308'; // yellow-500
-    case 'cross-onshore':
-      return '#F97316'; // orange-500
-    case 'onshore':
-      return '#EF4444'; // red-500
-    default:
-      return '#6B7280'; // gray-500
-  }
+  if (!quality) return windQualityColors.default;
+  return windQualityColors[quality] ?? windQualityColors.default;
 }
 
 /**
@@ -99,13 +88,13 @@ function CombinedTooltip({
   const windQualityLabel = data.windQuality ? windQualityLabels[data.windQuality] : 'N/A';
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-lg">
-      <p className="mb-2 text-sm font-medium text-gray-900">
+    <div className="rounded-xl bg-surface-container-lowest px-3 py-2 shadow-[0_20px_40px_rgba(0,30,64,0.12)]">
+      <p className="mb-2 text-sm font-medium text-on-surface">
         {format(data.time, 'EEE, MMM d')} at {format(data.time, 'h:mm a')}
       </p>
       <div className="space-y-1 text-sm">
         {data.waveHeightDisplay !== null && (
-          <p className="text-blue-600">
+          <p className="text-secondary">
             Wave Height: <span className="font-medium">
               {data.waveHeightDisplay.toFixed(1)}{unit === 'imperial' ? 'ft' : 'm'}
             </span>
@@ -117,14 +106,14 @@ function CombinedTooltip({
               {Math.round(data.windSpeedDisplay)}{unit === 'imperial' ? 'kts' : 'km/h'}
             </span>
             {data.windGustDisplay !== null && (
-              <span className="text-gray-500">
+              <span className="text-on-surface-variant">
                 {' '}(gusts {Math.round(data.windGustDisplay)})
               </span>
             )}
           </p>
         )}
         {data.windQuality && (
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-on-surface-variant">
             Wind Quality: <span style={{ color: getWindQualityColor(data.windQuality) }}>{windQualityLabel}</span>
           </p>
         )}
@@ -292,7 +281,7 @@ export function ConditionsOverview({
 
   if (chartData.length === 0) {
     return (
-      <div className={cn('flex items-center justify-center h-32 text-gray-400', className)}>
+      <div className={cn('flex items-center justify-center h-32 text-on-surface-variant', className)}>
         No forecast data available
       </div>
     );
@@ -327,32 +316,32 @@ export function ConditionsOverview({
     <div className={cn('w-full space-y-4', className)}>
       {/* Wind quality legend */}
       <div className="flex flex-wrap items-center gap-3 text-xs">
-        <span className="text-gray-500">Wind Quality:</span>
+        <span className="text-on-surface-variant">Wind Quality:</span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="text-gray-600">Offshore</span>
+          <span className="text-on-surface-variant">Offshore</span>
         </span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-green-500" />
-          <span className="text-gray-600">Cross-offshore</span>
+          <span className="text-on-surface-variant">Cross-offshore</span>
         </span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-yellow-500" />
-          <span className="text-gray-600">Cross-shore</span>
+          <span className="text-on-surface-variant">Cross-shore</span>
         </span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-orange-500" />
-          <span className="text-gray-600">Cross-onshore</span>
+          <span className="text-on-surface-variant">Cross-onshore</span>
         </span>
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-red-500" />
-          <span className="text-gray-600">Onshore</span>
+          <span className="text-on-surface-variant">Onshore</span>
         </span>
       </div>
 
       {/* Wave Height Chart */}
       <div>
-        <h3 className="mb-2 text-sm font-medium text-gray-700">Wave Height</h3>
+        <h3 className="mb-2 text-sm font-medium text-on-surface-variant">Wave Height</h3>
         <ResponsiveContainer width="100%" height={120}>
           <AreaChart data={combinedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             {/* Good windows highlighting */}
@@ -361,7 +350,7 @@ export function ConditionsOverview({
                 key={i}
                 x1={window.start}
                 x2={window.end}
-                fill="#10B981"
+                fill={chartUiColors.swellHeight}
                 fillOpacity={0.15}
               />
             ))}
@@ -371,13 +360,13 @@ export function ConditionsOverview({
               tickFormatter={formatXAxis}
               tick={{ fontSize: 10, fill: '#9CA3AF' }}
               tickLine={false}
-              axisLine={{ stroke: '#E5E7EB' }}
+              axisLine={{ stroke: chartUiColors.grid }}
               interval="preserveStartEnd"
             />
             <YAxis
               domain={[0, maxWave * 1.1]}
               tickFormatter={(v) => `${v.toFixed(0)}`}
-              tick={{ fontSize: 10, fill: '#3B82F6' }}
+              tick={{ fontSize: 10, fill: chartUiColors.waveHeight }}
               tickLine={false}
               axisLine={false}
               width={30}
@@ -389,20 +378,20 @@ export function ConditionsOverview({
               <ReferenceLine
                 key={i}
                 x={point.timestamp}
-                stroke="#D1D5DB"
+                stroke={chartUiColors.gridLine}
                 strokeDasharray="3 3"
               />
             ))}
 
             {/* Current time */}
             {isNowInRange && (
-              <ReferenceLine x={nowTimestamp} stroke="#EF4444" strokeWidth={1.5} strokeDasharray="4 2" />
+              <ReferenceLine x={nowTimestamp} stroke={chartUiColors.today} strokeWidth={1.5} strokeDasharray="4 2" />
             )}
 
             <Area
               type="monotone"
               dataKey="waveHeightDisplay"
-              stroke="#3B82F6"
+              stroke={chartUiColors.waveHeight}
               strokeWidth={2}
               fill="url(#waveGradient)"
               dot={false}
@@ -410,8 +399,8 @@ export function ConditionsOverview({
 
             <defs>
               <linearGradient id="waveGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05} />
+                <stop offset="5%" stopColor={chartUiColors.waveHeight} stopOpacity={0.4} />
+                <stop offset="95%" stopColor={chartUiColors.waveHeight} stopOpacity={0.05} />
               </linearGradient>
             </defs>
           </AreaChart>
@@ -420,7 +409,7 @@ export function ConditionsOverview({
 
       {/* Wind Speed Chart */}
       <div>
-        <h3 className="mb-2 text-sm font-medium text-gray-700">Wind Speed</h3>
+        <h3 className="mb-2 text-sm font-medium text-on-surface-variant">Wind Speed</h3>
         <ResponsiveContainer width="100%" height={120}>
           <ComposedChart data={combinedData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             {/* Good windows highlighting */}
@@ -429,7 +418,7 @@ export function ConditionsOverview({
                 key={i}
                 x1={window.start}
                 x2={window.end}
-                fill="#10B981"
+                fill={chartUiColors.swellHeight}
                 fillOpacity={0.15}
               />
             ))}
@@ -439,7 +428,7 @@ export function ConditionsOverview({
               tickFormatter={formatXAxis}
               tick={{ fontSize: 10, fill: '#9CA3AF' }}
               tickLine={false}
-              axisLine={{ stroke: '#E5E7EB' }}
+              axisLine={{ stroke: chartUiColors.grid }}
               interval="preserveStartEnd"
             />
             <YAxis
@@ -457,14 +446,14 @@ export function ConditionsOverview({
               <ReferenceLine
                 key={i}
                 x={point.timestamp}
-                stroke="#D1D5DB"
+                stroke={chartUiColors.gridLine}
                 strokeDasharray="3 3"
               />
             ))}
 
             {/* Current time */}
             {isNowInRange && (
-              <ReferenceLine x={nowTimestamp} stroke="#EF4444" strokeWidth={1.5} strokeDasharray="4 2" />
+              <ReferenceLine x={nowTimestamp} stroke={chartUiColors.today} strokeWidth={1.5} strokeDasharray="4 2" />
             )}
 
             {/* Gust overlay (area) */}
@@ -510,7 +499,7 @@ export function ConditionsOverview({
       {/* Tide Chart */}
       {tideData.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-medium text-gray-700">Tide</h3>
+          <h3 className="mb-2 text-sm font-medium text-on-surface-variant">Tide</h3>
           <ResponsiveContainer width="100%" height={100}>
             <AreaChart
               data={combinedData}
@@ -522,7 +511,7 @@ export function ConditionsOverview({
                   key={i}
                   x1={window.start}
                   x2={window.end}
-                  fill="#10B981"
+                  fill={chartUiColors.swellHeight}
                   fillOpacity={0.15}
                 />
               ))}
@@ -532,7 +521,7 @@ export function ConditionsOverview({
                 tickFormatter={formatXAxis}
                 tick={{ fontSize: 10, fill: '#9CA3AF' }}
                 tickLine={false}
-                axisLine={{ stroke: '#E5E7EB' }}
+                axisLine={{ stroke: chartUiColors.grid }}
                 interval="preserveStartEnd"
               />
               <YAxis
@@ -563,14 +552,14 @@ export function ConditionsOverview({
                 <ReferenceLine
                   key={i}
                   x={point.timestamp}
-                  stroke="#D1D5DB"
+                  stroke={chartUiColors.gridLine}
                   strokeDasharray="3 3"
                 />
               ))}
 
               {/* Current time */}
               {isNowInRange && (
-                <ReferenceLine x={nowTimestamp} stroke="#EF4444" strokeWidth={1.5} strokeDasharray="4 2" />
+                <ReferenceLine x={nowTimestamp} stroke={chartUiColors.today} strokeWidth={1.5} strokeDasharray="4 2" />
               )}
 
               <Area
@@ -605,7 +594,7 @@ export function ConditionsOverview({
             <Brush
               dataKey="timestamp"
               height={30}
-              stroke="#3B82F6"
+              stroke={chartUiColors.waveHeight}
               tickFormatter={(ts) => format(new Date(ts), 'MMM d')}
             />
           </AreaChart>
@@ -614,7 +603,7 @@ export function ConditionsOverview({
 
       {/* Good windows legend */}
       {goodWindows.length > 0 && (
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-on-surface-variant">
           <span className="inline-block h-3 w-3 rounded bg-emerald-500 opacity-30" />
           <span>Highlighted areas indicate good surfing windows (offshore wind + waves)</span>
         </div>

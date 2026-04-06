@@ -136,21 +136,21 @@ export function DayForecast({
   const summary = getDaySummary(hourlyData, optimalWindDirection);
 
   return (
-    <div className={cn('border border-gray-200 rounded-lg overflow-hidden', className)}>
+    <div className={cn('rounded-xl bg-surface-container-lowest overflow-hidden', className)}>
       {/* Header (clickable) */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
           'w-full flex items-center justify-between p-4 text-left',
-          'hover:bg-gray-50 transition-colors',
-          isExpanded ? 'bg-gray-50' : 'bg-white'
+          'hover:bg-surface-container transition-colors',
+          isExpanded ? 'bg-surface-container' : 'bg-surface-container-lowest'
         )}
       >
         <div className="flex items-center gap-3">
           {/* Expand/collapse icon */}
           <svg
             className={cn(
-              'w-5 h-5 text-gray-400 transition-transform',
+              'w-5 h-5 text-on-surface-variant transition-transform',
               isExpanded ? 'rotate-90' : ''
             )}
             fill="none"
@@ -161,7 +161,7 @@ export function DayForecast({
           </svg>
 
           {/* Day label */}
-          <span className="font-semibold text-gray-900">{dayLabel}</span>
+          <span className="font-semibold text-on-surface">{dayLabel}</span>
 
           {/* Day rating */}
           {summary.avgRating > 0 && (
@@ -172,7 +172,7 @@ export function DayForecast({
         {/* Summary when collapsed */}
         {!isExpanded && summary.bestSurf && (
           <div className="flex items-center gap-4 text-sm">
-            <span className="font-semibold text-blue-600">
+            <span className="font-semibold text-secondary">
               {summary.bestSurf.range}
             </span>
             {summary.bestWindQuality && (
@@ -189,7 +189,7 @@ export function DayForecast({
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="border-t border-gray-200">
+        <div>
           {/* Desktop: Full table */}
           <div className="hidden md:block">
             <HourlyTable

@@ -39,7 +39,7 @@ export function NearbySpots({
 
   return (
     <div className={cn('', className)}>
-      <h3 className="text-sm font-medium text-gray-500 mb-3">Nearby Breaks</h3>
+      <h3 className="text-sm font-medium text-on-surface-variant mb-3">Nearby Breaks</h3>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
         {otherSpots.map((spot) => (
           <NearbySpotCard
@@ -67,18 +67,18 @@ function NearbySpotCard({
     <Link
       href={`/${spot.id}`}
       className={cn(
-        'flex-shrink-0 w-36 p-3 rounded-lg border border-gray-200 bg-white',
-        'hover:border-blue-300 hover:shadow-sm transition-all'
+        'flex-shrink-0 w-36 p-3 rounded-xl bg-surface-container-lowest transition-shadow',
+        'hover:shadow-[0_20px_40px_rgba(0,30,64,0.06)]'
       )}
     >
       <div className="flex flex-col gap-2">
         {/* Spot name */}
-        <span className="font-medium text-gray-900 truncate text-sm">
+        <span className="font-medium text-on-surface truncate text-sm">
           {spot.name}
         </span>
 
         {/* Wave height */}
-        <span className="text-lg font-bold text-blue-600">
+        <span className="font-display tabular text-lg font-bold text-secondary">
           {spot.waveHeight !== null
             ? formatSurfRange(spot.waveHeight, spot.wavePeriod, unit)
             : 'Flat'}
@@ -90,7 +90,7 @@ function NearbySpotCard({
             <RatingBadge rating={spot.rating} size="sm" />
           )}
           {spot.distance !== undefined && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-on-surface-variant">
               {spot.distance.toFixed(1)}km
             </span>
           )}
