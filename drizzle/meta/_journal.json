@@ -15,6 +15,13 @@
       "when": 1775344062722,
       "tag": "0001_living_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775543641992,
+      "tag": "0002_nosy_gamora",
+      "breakpoints": true
     }
   ]
 }

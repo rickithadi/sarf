@@ -14,6 +14,7 @@ interface BreakCardProps {
   name: string;
   region: string;
   reportGeneratedAt?: string | null;
+  reportConditions?: string | null;
   currentConditions: {
     airTemp: number | null;
     windSpeedKmh: number | null;
@@ -42,6 +43,7 @@ export function BreakCard({
   name,
   region,
   reportGeneratedAt,
+  reportConditions,
   currentConditions,
   waveData,
   featured = false,
@@ -96,7 +98,7 @@ export function BreakCard({
               {surfRange}
               <span className="text-sm font-normal text-on-surface-variant"> · {periodLabel} · {windSummary}</span>
             </p>
-            <p className="mt-1 text-sm text-on-surface-variant">{decision.description}</p>
+            <p className="mt-1 text-sm text-on-surface-variant">{reportConditions ?? decision.description}</p>
             <p className="mt-3 text-xs uppercase tracking-[0.2em] text-on-surface-variant">
               Updated {lastUpdated ?? 'recently'}
             </p>

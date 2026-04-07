@@ -70,6 +70,7 @@ interface SurfReport {
   conditions: string;
   forecast: string;
   bestTime: string;
+  bestConditions?: string;
   generatedAt?: string;
 }
 

@@ -23,6 +23,7 @@ interface BreakData {
   region: string;
   rating: number | null;
   reportGeneratedAt: string | null;
+  reportConditions: string | null;
   currentConditions: {
     airTemp: number | null;
     windSpeedKmh: number | null;
@@ -97,9 +98,17 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
   const heroData = useMemo(() => {
     if (breaks.length === 0) return null;
     const scored = [...breaks].sort((a, b) => {
-      const ratingDiff = (b.rating ?? 0) - (a.rating ?? 0);
-      if (ratingDiff !== 0) return ratingDiff;
-      return (b.waveData?.height ?? 0) - (a.waveData?.height ?? 0);
+      const aScore = calculateSurfScore({
+        heightMeters: a.waveData?.height,
+        periodSeconds: a.waveData?.period,
+        windQuality: a.currentConditions?.windQuality ?? null,
+      });
+      const bScore = calculateSurfScore({
+        heightMeters: b.waveData?.height,
+        periodSeconds: b.waveData?.period,
+        windQuality: b.currentConditions?.windQuality ?? null,
+      });
+      return bScore - aScore;
     });
     const best = scored[0];
     const surfable = breaks.filter((b) => b.waveData?.height);
@@ -145,10 +154,10 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
     <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 xl:px-8">
       <h1 className="sr-only">LINEUP — Victorian Surf Breaks Live Conditions</h1>
 
-      {/* ── Hero: Decision-first editorial banner ── */}
+      {/* ── Hero ── */}
       {heroData && heroData.best && (
         <section className="relative mb-10 overflow-hidden rounded-2xl bg-primary">
-          {/* Grain texture — adds depth without gloss */}
+          {/* Grain */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 opacity-[0.035]"
@@ -158,55 +167,83 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
               backgroundSize: '180px 180px',
             }}
           />
+          {/* Decision color accent — left rail */}
+          <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: heroDecisionColor }} />
 
-          <div className="relative z-10 px-8 py-12 md:px-12 md:py-16">
+          <div className="relative z-10 px-8 py-10 md:px-12 md:py-14">
             {/* Eyebrow */}
-            <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-white/35">
-              Best right now
+            <p className="mb-5 text-xs font-bold uppercase tracking-[0.35em] text-white/35">
+              Best right now · {heroData.best.region}
             </p>
 
-            {/* VERDICT + Break name — the primary headline */}
-            <div className="mb-5 flex flex-wrap items-baseline gap-x-5 gap-y-1">
-              {heroDecision && (
-                <span
-                  className="font-display text-6xl font-black uppercase leading-none tracking-tighter md:text-8xl"
-                  style={{ color: heroDecisionColor }}
+            {/* Name + score row */}
+            <div className="flex items-start justify-between gap-6">
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-4xl font-black leading-none tracking-tight text-white md:text-6xl">
+                  {heroData.best.name}
+                </h2>
+
+                {/* Verdict badge */}
+                {heroDecision && (
+                  <span
+                    className="mt-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-bold"
+                    style={{ backgroundColor: `${heroDecisionColor}30`, color: heroDecisionColor }}
+                  >
+                    {heroDecision.label}
+                  </span>
+                )}
+
+                {/* Claude conditions — the "why" */}
+                <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/55 md:text-base md:text-white/60">
+                  {heroData.best.reportConditions ?? heroDecision?.description ?? '—'}
+                </p>
+
+                {/* Stat row */}
+                <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-white/30">Swell</p>
+                    <p className="font-display text-lg font-bold text-white">{heroWaveSummary}</p>
+                  </div>
+                  {heroPeriodLabel !== '—' && (
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-white/30">Period</p>
+                      <p className="font-display text-lg font-bold text-white">{heroPeriodLabel}</p>
+                    </div>
+                  )}
+                  {heroWindQualityLabel && (
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-white/30">Wind</p>
+                      <p className="font-display text-lg font-bold capitalize text-white">{heroWindQualityLabel}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* CTA */}
+                <Link
+                  href={`/${heroData.best.id}`}
+                  className="mt-7 inline-flex min-h-[44px] items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-bold text-primary transition hover:bg-white/90"
                 >
-                  {heroDecision.label}
-                </span>
+                  Full forecast →
+                </Link>
+              </div>
+
+              {/* Score — right side, desktop only */}
+              {heroScore !== null && (
+                <div className="hidden shrink-0 flex-col items-end md:flex">
+                  <p
+                    className="font-display text-8xl font-black leading-none tabular-nums"
+                    style={{ color: heroDecisionColor }}
+                  >
+                    {heroScore.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.3em] text-white/30">/ 10</p>
+                </div>
               )}
-              <span className="font-display text-3xl font-bold leading-none tracking-tight text-white/90 md:text-5xl">
-                {heroData.best.name}
-              </span>
-            </div>
-
-            {/* Conditions in surf language */}
-            <p className="mb-8 text-sm text-white/50">
-              {heroWaveSummary}
-              {heroPeriodLabel !== '—' && ` · ${heroPeriodLabel}`}
-              {heroWindQualityLabel && ` · ${heroWindQualityLabel}`}
-              {' · '}{heroData.best.region}
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href={`/${heroData.best.id}`}
-                className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-bold text-primary transition hover:bg-white/90"
-              >
-                Check {heroData.best.name}
-              </Link>
-              <Link
-                href="/how-it-works"
-                className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-semibold text-white/70 transition hover:border-white/40 hover:text-white"
-              >
-                How it works
-              </Link>
             </div>
 
             {/* Meta footer */}
-            <p className="mt-8 text-xs uppercase tracking-[0.3em] text-white/40">
-              {heroData.openBreaks} of {heroData.totalBreaks} breaks live · {heroLastUpdatedLabel}
+            <p className="mt-8 text-xs uppercase tracking-[0.3em] text-white/30">
+              {heroData.openBreaks} of {heroData.totalBreaks} breaks with data · updated {heroLastUpdatedLabel}
             </p>
           </div>
         </section>
@@ -270,6 +307,7 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
                         name={b.name}
                         region={b.region}
                         reportGeneratedAt={b.reportGeneratedAt}
+                        reportConditions={b.reportConditions}
                         currentConditions={b.currentConditions}
                         waveData={b.waveData}
                         featured={i === 0}

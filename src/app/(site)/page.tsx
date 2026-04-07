@@ -27,6 +27,7 @@ interface BreakData {
   lng: number;
   rating: number | null;
   reportGeneratedAt: string | null;
+  reportConditions: string | null;
   currentConditions: {
     airTemp: number | null;
     windSpeedKmh: number | null;

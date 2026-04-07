@@ -24,6 +24,8 @@ Important guidelines:
 export const SURF_REPORT_USER_PROMPT = (data: {
   breakName: string;
   region: string;
+  optimalWindDirection: string;
+  breakType: string | null;
   currentConditions: {
     airTemp: number | null;
     windSpeedKmh: number | null;
@@ -46,6 +48,10 @@ export const SURF_REPORT_USER_PROMPT = (data: {
     windQuality: string;
   }>;
 }) => `Generate a surf report for ${data.breakName} (${data.region}).
+
+BREAK CHARACTERISTICS:
+- Type: ${data.breakType ?? 'beach break'}
+- Optimal offshore wind: ${data.optimalWindDirection}
 
 CURRENT CONDITIONS:
 - Air temp: ${data.currentConditions.airTemp !== null ? `${data.currentConditions.airTemp}°C` : 'N/A'}
@@ -72,5 +78,6 @@ Respond with ONLY valid JSON in this exact format:
   "headline": "<brief catchy summary, max 10 words>",
   "conditions": "<current conditions paragraph, 2-3 sentences>",
   "forecast": "<next 12-24h outlook, 2-3 sentences>",
-  "bestTime": "<optimal surf window recommendation, 1-2 sentences>"
+  "bestTime": "<optimal surf window recommendation, 1-2 sentences>",
+  "bestConditions": "<1-2 sentences describing what makes this specific break fire — optimal swell period, direction, wind, and tide. Not today's conditions, but what this break needs to be at its best.>"
 }`;

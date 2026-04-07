@@ -109,6 +109,7 @@ interface BreakDetailClientProps {
     conditions: string;
     forecast: string;
     bestTime: string;
+    bestConditions?: string;
     generatedAt?: string;
   } | null;
   gridData: GridData | null;
@@ -619,21 +620,11 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
               </CollapsibleSection>
 
               <CollapsibleSection title="Best Conditions" defaultOpen>
-                <ul className="space-y-2 text-on-surface">
-                  {[
-                    `Offshore winds from ${getCardinalFromDegrees(breakData.optimalWindDirection)}`,
-                    'Swell period 10+ seconds',
-                    'Wave height 0.8-2.5m',
-                    'Mid to low tide',
-                  ].map((item) => (
-                    <li key={item} className="flex items-center gap-2">
-                      <svg className="w-5 h-5 flex-shrink-0 text-on-tertiary-container" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                {report?.bestConditions ? (
+                  <p className="text-sm leading-relaxed text-on-surface">{report.bestConditions}</p>
+                ) : (
+                  <p className="text-sm text-on-surface-variant">Break guide generates after the next data update.</p>
+                )}
               </CollapsibleSection>
             </div>
           )}

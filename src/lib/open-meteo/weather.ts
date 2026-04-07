@@ -94,61 +94,79 @@ export async function fetchWeatherForecastFull(
 
   const url = `https://api.open-meteo.com/v1/forecast?${params}`;
 
-  try {
-    const response = await fetch(url, {
-      next: { revalidate: 0 },
-    });
+  const MAX_RETRIES = 3;
+  let lastError: unknown;
 
-    if (!response.ok) {
-      console.error(`Open-Meteo weather API error: ${response.status} ${response.statusText}`);
-      return { hourly: [], daily: [] };
-    }
-
-    const data = await response.json();
-    const parsed = WeatherResponseSchema.safeParse(data);
-
-    if (!parsed.success) {
-      console.error('Open-Meteo weather response validation failed:', parsed.error);
-      return { hourly: [], daily: [] };
-    }
-
-    const { hourly, daily } = parsed.data;
-
-    // Parse hourly data
-    const hourlyForecasts: WeatherForecastPoint[] = [];
-    for (let i = 0; i < hourly.time.length; i++) {
-      hourlyForecasts.push({
-        time: new Date(hourly.time[i]),
-        windSpeed10m: hourly.wind_speed_10m[i],
-        windGusts10m: hourly.wind_gusts_10m[i],
-        windDirection10m: hourly.wind_direction_10m[i],
-        precipitation: hourly.precipitation[i],
-        uvIndex: hourly.uv_index?.[i] ?? null,
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(url, {
+        next: { revalidate: 0 },
+        signal: AbortSignal.timeout(15_000),
       });
-    }
 
-    // Parse daily data
-    const dailyData: DailyWeatherData[] = [];
-    if (daily) {
-      for (let i = 0; i < daily.time.length; i++) {
-        dailyData.push({
-          date: new Date(daily.time[i]),
-          sunrise: new Date(daily.sunrise[i]),
-          sunset: new Date(daily.sunset[i]),
-          uvIndexMax: daily.uv_index_max[i],
+      if (response.status === 429 || response.status >= 500) {
+        const delay = attempt * 2000;
+        console.warn(`Open-Meteo weather API ${response.status} (attempt ${attempt}/${MAX_RETRIES}, retrying in ${delay}ms)`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+
+      if (!response.ok) {
+        console.error(`Open-Meteo weather API error: ${response.status} ${response.statusText}`);
+        return { hourly: [], daily: [] };
+      }
+
+      const data = await response.json();
+      const parsed = WeatherResponseSchema.safeParse(data);
+
+      if (!parsed.success) {
+        console.error('Open-Meteo weather response validation failed:', parsed.error);
+        return { hourly: [], daily: [] };
+      }
+
+      const { hourly, daily } = parsed.data;
+
+      const hourlyForecasts: WeatherForecastPoint[] = [];
+      for (let i = 0; i < hourly.time.length; i++) {
+        hourlyForecasts.push({
+          time: new Date(hourly.time[i]),
+          windSpeed10m: hourly.wind_speed_10m[i],
+          windGusts10m: hourly.wind_gusts_10m[i],
+          windDirection10m: hourly.wind_direction_10m[i],
+          precipitation: hourly.precipitation[i],
+          uvIndex: hourly.uv_index?.[i] ?? null,
         });
       }
-    }
 
-    if (hourlyForecasts.length > 0) {
-      console.log(`[Weather API] Returned ${hourlyForecasts.length} hours from ${hourlyForecasts[0].time.toISOString()} to ${hourlyForecasts[hourlyForecasts.length - 1].time.toISOString()}`);
-    }
+      const dailyData: DailyWeatherData[] = [];
+      if (daily) {
+        for (let i = 0; i < daily.time.length; i++) {
+          dailyData.push({
+            date: new Date(daily.time[i]),
+            sunrise: new Date(daily.sunrise[i]),
+            sunset: new Date(daily.sunset[i]),
+            uvIndexMax: daily.uv_index_max[i],
+          });
+        }
+      }
 
-    return { hourly: hourlyForecasts, daily: dailyData };
-  } catch (error) {
-    console.error('Failed to fetch Open-Meteo weather:', error);
-    return { hourly: [], daily: [] };
+      if (hourlyForecasts.length > 0) {
+        console.log(`[Weather API] Returned ${hourlyForecasts.length} hours from ${hourlyForecasts[0].time.toISOString()} to ${hourlyForecasts[hourlyForecasts.length - 1].time.toISOString()}`);
+      }
+
+      return { hourly: hourlyForecasts, daily: dailyData };
+    } catch (error) {
+      lastError = error;
+      const delay = attempt * 2000;
+      console.warn(`Failed to fetch Open-Meteo weather (attempt ${attempt}/${MAX_RETRIES}):`, (error as Error).message);
+      if (attempt < MAX_RETRIES) {
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
   }
+
+  console.error('Open-Meteo weather fetch failed after all retries:', lastError);
+  return { hourly: [], daily: [] };
 }
 
 /**

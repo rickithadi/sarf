@@ -3,7 +3,7 @@ import { getAnthropicClient } from './client';
 import { SURF_REPORT_SYSTEM_PROMPT, SURF_REPORT_USER_PROMPT } from './prompts';
 import { getCached, setCached, cacheKeys, cacheTTL } from '../cache/redis';
 import { db } from '../db';
-import { breaks, observations, waves, weatherForecasts, tides } from '../db/schema';
+import { breaks, observations, waves, weatherForecasts, tides, reports } from '../db/schema';
 import { eq, desc, gte, and } from 'drizzle-orm';
 import { calculateWindQuality, degreesToCardinal, windQualityDescription } from '../breaks/wind-quality';
 import { format } from 'date-fns';
@@ -14,6 +14,7 @@ const SurfReportSchema = z.object({
   conditions: z.string(),
   forecast: z.string(),
   bestTime: z.string(),
+  bestConditions: z.string(),
 });
 
 export type SurfReportWithTimestamp = z.infer<typeof SurfReportSchema> & {
@@ -32,6 +33,25 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
   const cached = await getCached<SurfReportWithTimestamp>(cacheKey);
   if (cached) {
     return cached;
+  }
+
+  // Cache miss — check DB before calling Claude
+  const existingReport = await db.query.reports.findFirst({
+    where: eq(reports.breakId, breakId),
+  });
+  if (existingReport) {
+    const fromDb: SurfReportWithTimestamp = {
+      rating: existingReport.rating,
+      headline: existingReport.headline,
+      conditions: existingReport.conditions,
+      forecast: existingReport.forecast,
+      bestTime: existingReport.bestTime,
+      bestConditions: existingReport.bestConditions,
+      generatedAt: existingReport.generatedAt.toISOString(),
+    };
+    // Re-warm the cache
+    await setCached(cacheKey, fromDb, cacheTTL.surfReport);
+    return fromDb;
   }
 
   // Fetch break data
@@ -90,6 +110,8 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
   const promptData = {
     breakName: breakData.name,
     region: breakData.region,
+    optimalWindDirection: degreesToCardinal(breakData.optimalWindDirection),
+    breakType: breakData.breakType ?? null,
     currentConditions: {
       airTemp: latestObservation?.airTemp ?? null,
       windSpeedKmh: latestObservation?.windSpeedKmh ?? null,
@@ -152,11 +174,38 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
     const parsed = JSON.parse(jsonMatch[0]);
     const validated = SurfReportSchema.parse(parsed);
 
-    // Add timestamp and cache the result
+    const generatedAt = new Date();
     const reportWithTimestamp: SurfReportWithTimestamp = {
       ...validated,
-      generatedAt: new Date().toISOString(),
+      generatedAt: generatedAt.toISOString(),
     };
+
+    // Persist to DB (upsert) and cache
+    await db
+      .insert(reports)
+      .values({
+        breakId,
+        rating: validated.rating,
+        headline: validated.headline,
+        conditions: validated.conditions,
+        forecast: validated.forecast,
+        bestTime: validated.bestTime,
+        bestConditions: validated.bestConditions,
+        generatedAt,
+      })
+      .onConflictDoUpdate({
+        target: reports.breakId,
+        set: {
+          rating: validated.rating,
+          headline: validated.headline,
+          conditions: validated.conditions,
+          forecast: validated.forecast,
+          bestTime: validated.bestTime,
+          bestConditions: validated.bestConditions,
+          generatedAt,
+        },
+      });
+
     await setCached(cacheKey, reportWithTimestamp, cacheTTL.surfReport);
 
     return reportWithTimestamp;

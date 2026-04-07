@@ -31,24 +31,38 @@ export function calculateSurfScore({
 }
 
 export function scoreToDecision(score: number) {
-  if (score >= 7.5) {
+  if (score >= 8.5) {
+    return {
+      label: 'Fire',
+      tone: 'good' as const,
+      description: 'Firing. Drop everything.',
+    };
+  }
+  if (score >= 7.0) {
     return {
       label: 'Go now',
       tone: 'good' as const,
-      description: 'Clean swell, favorable wind, lined-up banks.',
+      description: 'Solid conditions. Worth the drive.',
     };
   }
   if (score >= 5.5) {
     return {
-      label: 'Keep an eye on it',
+      label: 'Maybe',
       tone: 'okay' as const,
-      description: 'Rideable with some texture—worth a check later.',
+      description: 'Workable but patchy. Check before you go.',
+    };
+  }
+  if (score >= 3.5) {
+    return {
+      label: 'Marginal',
+      tone: 'okay' as const,
+      description: 'Below average. For keen groms only.',
     };
   }
   return {
-    label: 'Wait it out',
+    label: 'Skip it',
     tone: 'poor' as const,
-    description: 'Wind/tide not cooperating. Expect inconsistency.',
+    description: 'Not worth it today.',
   };
 }
 

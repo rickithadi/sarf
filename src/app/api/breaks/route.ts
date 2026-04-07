@@ -3,8 +3,9 @@ import { db } from '@/lib/db';
 import { breaks, observations, waves } from '@/lib/db/schema';
 import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
 import { calculateWindQuality } from '@/lib/breaks/wind-quality';
-import { getCached, cacheKeys } from '@/lib/cache/redis';
+import { getCached, setCached, cacheKeys, cacheTTL } from '@/lib/cache/redis';
 import { SurfReportWithTimestamp } from '@/lib/claude/report-generator';
+import { reports } from '@/lib/db/schema';
 
 export async function GET() {
   try {
@@ -42,14 +43,35 @@ export async function GET() {
         // Get Claude's rating from cached report (no fallback to calculated rating)
         let rating: number | null = null;
         let reportGeneratedAt: string | null = null;
+        let reportConditions: string | null = null;
         try {
-          const cachedReport = await getCached<SurfReportWithTimestamp>(cacheKeys.surfReport(b.id));
-          if (cachedReport?.rating) {
-            rating = cachedReport.rating;
-            reportGeneratedAt = cachedReport.generatedAt;
+          let report = await getCached<SurfReportWithTimestamp>(cacheKeys.surfReport(b.id));
+          if (!report) {
+            // Cache cold — check DB and re-warm
+            const dbReport = await db.query.reports.findFirst({
+              where: eq(reports.breakId, b.id),
+            });
+            if (dbReport) {
+              report = {
+                rating: dbReport.rating,
+                headline: dbReport.headline,
+                conditions: dbReport.conditions,
+                forecast: dbReport.forecast,
+                bestTime: dbReport.bestTime,
+                bestConditions: dbReport.bestConditions,
+                generatedAt: dbReport.generatedAt.toISOString(),
+              };
+              // Re-warm cache so subsequent requests are fast
+              await setCached(cacheKeys.surfReport(b.id), report, cacheTTL.surfReport);
+            }
+          }
+          if (report?.rating) {
+            rating = report.rating;
+            reportGeneratedAt = report.generatedAt;
+            reportConditions = report.conditions ?? null;
           }
         } catch {
-          // Redis error - rating stays null
+          // Redis/DB error - rating stays null
         }
         // No fallback to calculated rating - use Claude's rating or null
 
@@ -61,6 +83,7 @@ export async function GET() {
           lng: b.lng,
           rating: rating || null,
           reportGeneratedAt,
+          reportConditions,
           currentConditions: latestObs
             ? {
                 airTemp: latestObs.airTemp,

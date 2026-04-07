@@ -38,7 +38,7 @@ export const cacheKeys = {
  * Default TTL values in seconds
  */
 export const cacheTTL = {
-  surfReport: 30 * 60, // 30 minutes
+  surfReport: 23 * 60 * 60, // 23 hours (refreshed by daily cron)
   conditions: 5 * 60, // 5 minutes
   mapGrid: 3 * 60 * 60, // 3 hours
   tideConfidence: 60 * 60, // 1 hour
