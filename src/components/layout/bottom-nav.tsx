@@ -15,7 +15,7 @@ const TABS = [
   },
   {
     href: '/how-it-works',
-    label: 'Forecast',
+    label: 'Science',
     icon: (active: boolean) => (
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={active ? 0 : 2} className="w-6 h-6">
         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5C3 9.36 6.36 6 10.5 6S18 9.36 18 13.5M2 17h16M6 17v-2.5M10 17V14M14 17v-3M18 17v-4" />
@@ -40,7 +40,7 @@ export function BottomNav() {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`flex flex-1 flex-col items-center gap-1 py-3 text-[0.625rem] font-medium transition-colors ${
+              className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
                 active ? 'text-primary' : 'text-on-surface-variant'
               }`}
             >

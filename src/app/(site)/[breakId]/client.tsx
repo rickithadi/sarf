@@ -274,44 +274,20 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
         {/* ── Left: main content ── */}
         <div className="lg:col-span-8 space-y-6">
 
-          {/* Cam placeholder */}
-          <div className="relative w-full overflow-hidden rounded-xl" style={{ aspectRatio: '16/9' }}>
-            <div
-              className="absolute inset-0"
-              style={{ background: 'linear-gradient(160deg, #1a60a4 0%, #001e40 55%, #002a10 100%)' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent" />
-            {/* LIVE indicator */}
-            <div className="absolute top-4 left-4 flex items-center gap-2 rounded-full bg-black/40 px-3 py-1.5 backdrop-blur-sm">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-              <span className="text-xs font-bold text-white">LIVE</span>
-            </div>
-            {/* Play button */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full bg-white/20 p-4 backdrop-blur-sm">
-                <svg className="ml-1 h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              </div>
-            </div>
-            {/* Break name bottom-left */}
-            <div className="absolute bottom-4 left-4">
-              <p className="text-xs font-bold uppercase tracking-widest text-white/60">Live Cam</p>
-              <p className="font-bold text-white">{breakData.name}</p>
-            </div>
-          </div>
-
-          {/* Bento data strip */}
+          {/* Conditions strip — primary data, decision-color accent on swell */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <div className="col-span-2 rounded-xl bg-surface-container-lowest p-6 lg:col-span-2">
-              <p className="text-xs font-bold uppercase tracking-[0.3em] text-on-surface-variant">Current Swell</p>
-              <p className="mt-2 font-display text-3xl font-bold tracking-tight text-on-surface">
-                {waveData?.swellHeight ? formatWaveHeight(waveData.swellHeight, unit, 1) : '—'}
-              </p>
-              <p className="mt-1 text-sm text-on-surface-variant">
-                {waveData?.swellPeriod ? `${Math.round(waveData.swellPeriod)}s period` : 'Period pending'}
-                {waveData?.swellDirectionCardinal ? ` · From ${waveData.swellDirectionCardinal}` : ''}
-              </p>
+            <div className="col-span-2 overflow-hidden rounded-xl bg-surface-container-lowest lg:col-span-2">
+              <div className="h-1 w-full" style={{ backgroundColor: decisionColor }} />
+              <div className="p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.3em] text-on-surface-variant">Current Swell</p>
+                <p className="mt-2 font-display text-4xl font-bold tracking-tight text-on-surface">
+                  {waveData?.swellHeight ? formatWaveHeight(waveData.swellHeight, unit, 1) : '—'}
+                </p>
+                <p className="mt-1.5 text-sm text-on-surface-variant">
+                  {waveData?.swellPeriod ? `${Math.round(waveData.swellPeriod)}s period` : 'Period pending'}
+                  {waveData?.swellDirectionCardinal ? ` · From ${waveData.swellDirectionCardinal}` : ''}
+                </p>
+              </div>
             </div>
             <div className="rounded-xl bg-surface-container-lowest p-6">
               <p className="text-xs font-bold uppercase tracking-[0.3em] text-on-surface-variant">Wind</p>
@@ -678,19 +654,19 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
               <h3 className="text-xl font-bold leading-tight mb-4">{report.headline}</h3>
               <div className="space-y-4 text-sm text-primary-fixed-dim leading-relaxed">
                 <div>
-                  <p className="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Conditions</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Conditions</p>
                   <p>{report.conditions}</p>
                 </div>
                 <div>
-                  <p className="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Forecast</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Forecast</p>
                   <p>{report.forecast}</p>
                 </div>
                 <div>
-                  <p className="text-[0.625rem] font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Best time</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.3em] text-secondary-container mb-1">Best time</p>
                   <p>{report.bestTime}</p>
                 </div>
               </div>
-              <p className="mt-6 text-[0.625rem] text-white/30" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
+              <p className="mt-6 text-xs text-white/40" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
                 LINEUP analysis{report.generatedAt ? ` · ${format(new Date(report.generatedAt), 'MMM d, h:mm a')}` : ''}
               </p>
             </div>
@@ -730,15 +706,15 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
           <div className="rounded-2xl bg-surface-container-high p-6 space-y-6">
             <h3 className="text-sm font-black uppercase tracking-widest text-primary pb-4" style={{ borderBottom: '1px solid #c3c6d1' }}>Spot Analytics</h3>
             <div>
-              <span className="text-[0.6875rem] font-bold text-outline uppercase block">Optimal Wind</span>
+              <span className="text-xs font-bold text-outline uppercase block">Optimal Wind</span>
               <span className="text-sm font-bold text-primary">{getCardinalFromDegrees(breakData.optimalWindDirection)} (Offshore)</span>
             </div>
             <div>
-              <span className="text-[0.6875rem] font-bold text-outline uppercase block">Best Window</span>
+              <span className="text-xs font-bold text-outline uppercase block">Best Window</span>
               <span className="text-sm font-bold text-primary">{bestWindowLabel}</span>
             </div>
             <div>
-              <span className="text-[0.6875rem] font-bold text-outline uppercase block">Tide Factor</span>
+              <span className="text-xs font-bold text-outline uppercase block">Tide Factor</span>
               <span className="text-sm font-bold text-primary">{tideLabel}</span>
             </div>
           </div>

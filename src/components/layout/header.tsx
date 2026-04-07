@@ -6,8 +6,6 @@ import { usePathname } from 'next/navigation';
 const NAV_LINKS = [
   { href: '/', label: 'Forecasts' },
   { href: '/how-it-works', label: 'Ocean Science' },
-  { href: '#', label: 'Tide Charts' },
-  { href: '#', label: 'News' },
 ];
 
 export function Header() {

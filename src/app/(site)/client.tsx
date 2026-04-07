@@ -10,7 +10,7 @@ import type { WindQuality } from '@/lib/breaks/wind-quality';
 import dynamic from 'next/dynamic';
 import type { GridData } from '@/app/api/map/grid/route';
 import { formatSurfRange, formatWindSpeed } from '@/lib/utils/units';
-import { calculateSurfScore, scoreToDecision } from '@/lib/utils/surf-score';
+import { calculateSurfScore, scoreToDecision, toneToColor } from '@/lib/utils/surf-score';
 
 const MeteoMap = dynamic(() => import('@/components/map/MeteoMap').then((m) => m.MeteoMap), {
   ssr: false,
@@ -127,16 +127,16 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
   }, [heroData]);
 
   const heroDecision = heroScore !== null ? scoreToDecision(heroScore) : null;
+  const heroDecisionColor = heroDecision ? toneToColor(heroDecision.tone) : '#5ead5c';
+  const heroWindQualityLabel = heroData?.best?.currentConditions?.windQuality
+    ? heroData.best.currentConditions.windQuality.replace(/-/g, ' ')
+    : null;
   const heroWaveSummary = heroData?.best?.waveData?.height
     ? formatSurfRange(heroData.best.waveData.height, heroData.best.waveData.period, unit)
     : 'Flat';
   const heroPeriodLabel = heroData?.best?.waveData?.period
     ? `${Math.round(heroData.best.waveData.period)}s`
     : '—';
-  const heroWindSpeedLabel =
-    heroData?.best?.currentConditions?.windSpeedKmh !== null && heroData?.best?.currentConditions?.windSpeedKmh !== undefined
-      ? formatWindSpeed(heroData.best.currentConditions.windSpeedKmh, unit)
-      : 'Calm';
   const heroLastUpdatedLabel = heroData?.lastUpdated
     ? formatDistanceToNow(heroData.lastUpdated, { addSuffix: true })
     : 'Awaiting update';
@@ -145,78 +145,84 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
     <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 xl:px-8">
       <h1 className="sr-only">LINEUP — Victorian Surf Breaks Live Conditions</h1>
 
-      {/* ── Hero: Full-width editorial banner ── */}
+      {/* ── Hero: Decision-first editorial banner ── */}
       {heroData && heroData.best && (
-        <section className="relative mb-10 h-[480px] w-full overflow-hidden rounded-3xl flex items-end md:h-[560px]">
-          {/* Gradient background (editorial ocean feel) */}
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(160deg, #1a60a4 0%, #001e40 50%, #002504 100%)' }} />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,30,64,0.95) 0%, rgba(0,30,64,0.2) 60%, transparent 100%)' }} />
+        <section className="relative mb-10 overflow-hidden rounded-2xl bg-primary">
+          {/* Grain texture — adds depth without gloss */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-[0.035]"
+            style={{
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+              backgroundRepeat: 'repeat',
+              backgroundSize: '180px 180px',
+            }}
+          />
 
-          {/* Content */}
-          <div className="relative z-10 w-full p-8 md:p-10 grid grid-cols-1 gap-6 items-end md:grid-cols-12 md:gap-8">
-            <div className="md:col-span-8">
-              <p className="text-white/50 text-xs font-bold uppercase tracking-[0.25em] mb-3">Best Right Now</p>
-              <h2 className="font-display text-5xl font-black text-white tracking-tighter leading-none mb-2 md:text-7xl">
+          <div className="relative z-10 px-8 py-12 md:px-12 md:py-16">
+            {/* Eyebrow */}
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.35em] text-white/35">
+              Best right now
+            </p>
+
+            {/* VERDICT + Break name — the primary headline */}
+            <div className="mb-5 flex flex-wrap items-baseline gap-x-5 gap-y-1">
+              {heroDecision && (
+                <span
+                  className="font-display text-6xl font-black uppercase leading-none tracking-tighter md:text-8xl"
+                  style={{ color: heroDecisionColor }}
+                >
+                  {heroDecision.label}
+                </span>
+              )}
+              <span className="font-display text-3xl font-bold leading-none tracking-tight text-white/90 md:text-5xl">
                 {heroData.best.name}
-              </h2>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-white/60 text-sm tracking-widest uppercase font-medium">{heroData.best.region}</span>
-                {heroDecision && (
-                  <span className="px-3 py-1 text-xs font-bold rounded-full uppercase tracking-widest text-white" style={{ backgroundColor: '#5ead5c' }}>
-                    {heroDecision.label}
-                  </span>
-                )}
-              </div>
-              <p className="text-white/80 text-base max-w-xl leading-relaxed md:text-lg">
-                {heroData.openBreaks} of {heroData.totalBreaks} breaks live · Updated {heroLastUpdatedLabel}
-              </p>
-              <div className="mt-6 flex flex-wrap gap-4">
-                <Link
-                  href={`/${heroData.best.id}`}
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-on-primary px-6 py-2.5 text-sm font-bold text-primary transition hover:bg-white/90"
-                >
-                  Open {heroData.best.name}
-                </Link>
-                <Link
-                  href="/how-it-works"
-                  className="inline-flex min-h-[44px] items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white/70 transition hover:text-white"
-                  style={{ border: '1px solid rgba(255,255,255,0.2)' }}
-                >
-                  How it works
-                </Link>
-              </div>
+              </span>
             </div>
 
-            {/* Stat tiles */}
-            <div className="md:col-span-4 flex gap-4 justify-start md:justify-end pb-1">
-              <div className="rounded-2xl p-5 text-white min-w-[120px]" style={{ backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <span className="block text-[0.6875rem] font-medium uppercase tracking-widest text-white/60 mb-1">Surf</span>
-                <span className="block font-display text-3xl font-black tabular">{heroWaveSummary}</span>
-              </div>
-              <div className="rounded-2xl p-5 text-white min-w-[120px]" style={{ backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <span className="block text-[0.6875rem] font-medium uppercase tracking-widest text-white/60 mb-1">Period</span>
-                <span className="block font-display text-3xl font-black tabular">{heroPeriodLabel}</span>
-              </div>
-              <div className="rounded-2xl p-5 text-white min-w-[120px]" style={{ backgroundColor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <span className="block text-[0.6875rem] font-medium uppercase tracking-widest text-white/60 mb-1">Wind</span>
-                <span className="block font-display text-3xl font-black tabular">{heroWindSpeedLabel}</span>
-              </div>
+            {/* Conditions in surf language */}
+            <p className="mb-8 text-sm text-white/50">
+              {heroWaveSummary}
+              {heroPeriodLabel !== '—' && ` · ${heroPeriodLabel}`}
+              {heroWindQualityLabel && ` · ${heroWindQualityLabel}`}
+              {' · '}{heroData.best.region}
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={`/${heroData.best.id}`}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-bold text-primary transition hover:bg-white/90"
+              >
+                Check {heroData.best.name}
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-white/20 px-6 py-2.5 text-sm font-semibold text-white/70 transition hover:border-white/40 hover:text-white"
+              >
+                How it works
+              </Link>
             </div>
+
+            {/* Meta footer */}
+            <p className="mt-8 text-xs uppercase tracking-[0.3em] text-white/40">
+              {heroData.openBreaks} of {heroData.totalBreaks} breaks live · {heroLastUpdatedLabel}
+            </p>
           </div>
         </section>
       )}
 
       {/* ── Controls bar ── */}
-      <div className="mb-6 flex items-center justify-between gap-3">
+      <div className="mb-6 flex items-center justify-between gap-3 rounded-2xl bg-surface-container-low px-5 py-2.5">
         <FavoritesFilter showOnlyFavorites={showOnlyFavorites} onToggle={() => setShowOnlyFavorites(!showOnlyFavorites)} />
         <UnitToggle />
       </div>
 
-      {/* ── Main 12-col grid: break cards + sidebar ── */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+      {/* ── Main grid: break cards + map sidebar ── */}
+      <div className={`grid grid-cols-1 gap-8 ${mapData ? 'lg:grid-cols-12' : ''}`}>
 
-        {/* Left: break cards (col-span-8) */}
-        <div className="lg:col-span-8">
+        {/* Left: break cards */}
+        <div className={mapData ? 'lg:col-span-8' : ''}>
           {/* Region filter */}
           {regions.length > 1 && (
             <div className="sticky top-[72px] z-10 mb-6 -mx-4 bg-surface px-4 py-2 sm:-mx-0 sm:rounded-full sm:px-6">
@@ -277,62 +283,25 @@ export function HomePageClient({ breaks, mapData }: HomePageClientProps) {
           )}
         </div>
 
-        {/* Right: sidebar (col-span-4) */}
-        <aside className="lg:col-span-4 space-y-6">
-          {/* Map widget */}
-          {mapData && (
-            <div className="rounded-2xl overflow-hidden bg-primary" style={{ background: 'linear-gradient(135deg, #001e40 0%, #1a60a4 100%)' }}>
-              <div className="p-6 pb-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <svg className="w-5 h-5 text-secondary-container" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        {/* Right: map sidebar — only rendered when map data is available */}
+        {mapData && (
+          <aside className="lg:col-span-4">
+            <div className="overflow-hidden rounded-2xl">
+              <div className="bg-primary px-5 py-4">
+                <div className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-white/50" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
                   </svg>
-                  <h3 className="font-display text-lg font-bold text-on-primary tracking-tight">Wave + Wind Map</h3>
-                  <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-on-primary/70">Beta</span>
+                  <h3 className="font-display text-sm font-bold uppercase tracking-widest text-white/80">Wave + Wind</h3>
+                  <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[0.625rem] font-medium text-white/50">Beta</span>
                 </div>
               </div>
-              <div className="h-[300px]">
+              <div className="h-[320px]">
                 <MeteoMap gridData={mapData.gridData} breaks={mapData.breaks} initialBounds={mapData.bounds} height="100%" />
               </div>
             </div>
-          )}
-
-          {/* Forecaster's Note */}
-          <div className="rounded-2xl bg-surface-container-low p-8" style={{ borderLeft: '4px solid #001e40' }}>
-            <h3 className="font-display text-lg font-bold text-primary mb-4">Forecaster&apos;s Note</h3>
-            <p className="text-on-surface-variant text-sm leading-relaxed italic mb-6">
-              &ldquo;Victorian surf is driven by Southern Ocean groundswells — the best sessions arrive after fronts clear, when SW energy fires the reefs and offshore winds groom the face. Watch the swell period more than the height.&rdquo;
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary text-xs font-black">L</div>
-              <div>
-                <span className="block text-xs font-bold text-primary">LINEUP Intelligence</span>
-                <span className="block text-[10px] text-outline">Victorian Coast</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick stats */}
-          {heroData && (
-            <div className="rounded-2xl bg-surface-container-lowest p-6 shadow-[0_20px_40px_rgba(0,30,64,0.06)]">
-              <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-4">Live Feed</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-on-surface-variant">Breaks reporting</span>
-                  <span className="font-display font-bold text-primary tabular">{heroData.openBreaks}/{heroData.totalBreaks}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-on-surface-variant">Favorites tracked</span>
-                  <span className="font-display font-bold text-primary tabular">{heroData.favoritesCount}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-on-surface-variant">Last updated</span>
-                  <span className="font-display font-bold text-primary tabular text-sm">{heroLastUpdatedLabel}</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </aside>
+          </aside>
+        )}
       </div>
     </div>
   );
