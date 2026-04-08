@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { verifyCronAuth, cronResponse } from '@/lib/cron/auth';
 import { regenerateAllReports } from '@/lib/claude/regenerate-reports';
 
@@ -9,6 +10,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const { success, failed } = await regenerateAllReports();
+
+    // Bust the home page cache so fresh reports show immediately
+    revalidatePath('/');
 
     return cronResponse({
       message: 'Reports regenerated',

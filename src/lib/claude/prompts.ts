@@ -15,7 +15,6 @@ You will receive:
 Based on this data, provide your assessment in the exact JSON format specified.
 
 Important guidelines:
-- Rating scale: 1 (poor) to 5 (excellent)
 - Consider wind quality as a primary factor - offshore winds are ideal
 - Wave height and period are important for wave quality
 - Mention any hazards or concerns
@@ -74,7 +73,6 @@ ${data.forecast.map(f => `- ${f.time}: ${f.windSpeed !== null ? `${f.windSpeed} 
 
 Respond with ONLY valid JSON in this exact format:
 {
-  "rating": <number 1-5>,
   "headline": "<brief catchy summary, max 10 words>",
   "conditions": "<current conditions paragraph, 2-3 sentences>",
   "forecast": "<next 12-24h outlook, 2-3 sentences>",

@@ -21,8 +21,8 @@ export async function regenerateAllReports(): Promise<{
       // Clear existing cache
       await deleteCached(cacheKeys.surfReport(b.id));
 
-      // Generate fresh report (will be cached automatically)
-      const report = await generateSurfReport(b.id);
+      // Generate fresh report — force bypasses cache and DB to call Claude
+      const report = await generateSurfReport(b.id, true);
 
       if (report) {
         success.push(b.id);

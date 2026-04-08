@@ -478,6 +478,14 @@ export function BreakDetailClient({ detail, report, gridData, tideConfidence, su
                         <dt className="text-on-surface-variant">Wave Direction</dt>
                         <dd className="font-medium text-on-surface">{waveData.directionCardinal}</dd>
                       </div>
+                      {waveData.height !== null && waveData.period !== null && (
+                        <div className="flex justify-between">
+                          <dt className="text-on-surface-variant">Wave Power</dt>
+                          <dd className="font-medium text-on-surface">
+                            {Math.round(0.5 * waveData.height ** 2 * waveData.period)} kW/m
+                          </dd>
+                        </div>
+                      )}
                       <div className="pt-3">
                         <h3 className="mb-2 text-sm font-medium text-on-surface">Primary Swell</h3>
                       </div>

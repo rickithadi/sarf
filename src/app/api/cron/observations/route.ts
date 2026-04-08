@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { verifyCronAuth, cronResponse } from '@/lib/cron/auth';
 import { db } from '@/lib/db';
 import { breaks, observations } from '@/lib/db/schema';
@@ -124,6 +125,8 @@ export async function GET(request: NextRequest) {
     for (const breakId of successfulBreaks) {
       await deleteCached(cacheKeys.surfReport(breakId));
     }
+
+    revalidatePath('/');
 
     return cronResponse({
       message: `Observations updated`,

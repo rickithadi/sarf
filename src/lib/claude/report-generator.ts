@@ -4,12 +4,11 @@ import { SURF_REPORT_SYSTEM_PROMPT, SURF_REPORT_USER_PROMPT } from './prompts';
 import { getCached, setCached, cacheKeys, cacheTTL } from '../cache/redis';
 import { db } from '../db';
 import { breaks, observations, waves, weatherForecasts, tides, reports } from '../db/schema';
-import { eq, desc, gte, and } from 'drizzle-orm';
-import { calculateWindQuality, degreesToCardinal, windQualityDescription } from '../breaks/wind-quality';
+import { eq, desc, asc, gte, and } from 'drizzle-orm';
+import { calculateWindQuality, calculateSurfRating, degreesToCardinal, windQualityDescription } from '../breaks/wind-quality';
 import { format } from 'date-fns';
 
 const SurfReportSchema = z.object({
-  rating: z.number().min(1).max(5),
   headline: z.string(),
   conditions: z.string(),
   forecast: z.string(),
@@ -18,40 +17,46 @@ const SurfReportSchema = z.object({
 });
 
 export type SurfReportWithTimestamp = z.infer<typeof SurfReportSchema> & {
+  rating: number;
   generatedAt: string;
 };
 
-export type SurfReport = z.infer<typeof SurfReportSchema>;
+export type SurfReport = z.infer<typeof SurfReportSchema> & {
+  rating: number;
+};
 
 /**
  * Generate a surf report for a specific break
  * Uses Claude AI with 30-minute caching
  */
-export async function generateSurfReport(breakId: string): Promise<SurfReportWithTimestamp | null> {
-  // Check cache first
+export async function generateSurfReport(breakId: string, force = false): Promise<SurfReportWithTimestamp | null> {
   const cacheKey = cacheKeys.surfReport(breakId);
-  const cached = await getCached<SurfReportWithTimestamp>(cacheKey);
-  if (cached) {
-    return cached;
-  }
 
-  // Cache miss — check DB before calling Claude
-  const existingReport = await db.query.reports.findFirst({
-    where: eq(reports.breakId, breakId),
-  });
-  if (existingReport) {
-    const fromDb: SurfReportWithTimestamp = {
-      rating: existingReport.rating,
-      headline: existingReport.headline,
-      conditions: existingReport.conditions,
-      forecast: existingReport.forecast,
-      bestTime: existingReport.bestTime,
-      bestConditions: existingReport.bestConditions,
-      generatedAt: existingReport.generatedAt.toISOString(),
-    };
-    // Re-warm the cache
-    await setCached(cacheKey, fromDb, cacheTTL.surfReport);
-    return fromDb;
+  if (!force) {
+    // Check cache first
+    const cached = await getCached<SurfReportWithTimestamp>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Cache miss — check DB before calling Claude
+    const existingReport = await db.query.reports.findFirst({
+      where: eq(reports.breakId, breakId),
+    });
+    if (existingReport) {
+      const fromDb: SurfReportWithTimestamp = {
+        rating: existingReport.rating,
+        headline: existingReport.headline,
+        conditions: existingReport.conditions,
+        forecast: existingReport.forecast,
+        bestTime: existingReport.bestTime,
+        bestConditions: existingReport.bestConditions,
+        generatedAt: existingReport.generatedAt.toISOString(),
+      };
+      // Re-warm the cache
+      await setCached(cacheKey, fromDb, cacheTTL.surfReport);
+      return fromDb;
+    }
   }
 
   // Fetch break data
@@ -72,13 +77,13 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
     orderBy: [desc(observations.time)],
   });
 
-  // Fetch latest wave data
+  // Fetch nearest upcoming wave data
   const latestWave = await db.query.waves.findFirst({
     where: and(
       eq(waves.breakId, breakId),
       gte(waves.time, now)
     ),
-    orderBy: [desc(waves.time)],
+    orderBy: [asc(waves.time)],
   });
 
   // Fetch upcoming tides
@@ -87,7 +92,7 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
       eq(tides.breakId, breakId),
       gte(tides.time, now)
     ),
-    orderBy: [desc(tides.time)],
+    orderBy: [asc(tides.time)],
     limit: 4,
   });
 
@@ -97,7 +102,7 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
       eq(weatherForecasts.breakId, breakId),
       gte(weatherForecasts.time, now)
     ),
-    orderBy: [desc(weatherForecasts.time)],
+    orderBy: [asc(weatherForecasts.time)],
     limit: 12,
   });
 
@@ -105,6 +110,14 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
   const currentWindQuality = latestObservation
     ? calculateWindQuality(latestObservation.windDir, breakData.optimalWindDirection, latestObservation.windSpeedKmh)
     : null;
+
+  // Compute rating deterministically from conditions data (1-5)
+  const computedRating = calculateSurfRating({
+    windQuality: currentWindQuality,
+    windSpeedKmh: latestObservation?.windSpeedKmh ?? null,
+    waveHeight: latestWave?.waveHeight ?? null,
+    wavePeriod: latestWave?.wavePeriod ?? null,
+  }) ?? 3;
 
   // Build prompt data
   const promptData = {
@@ -177,6 +190,7 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
     const generatedAt = new Date();
     const reportWithTimestamp: SurfReportWithTimestamp = {
       ...validated,
+      rating: computedRating,
       generatedAt: generatedAt.toISOString(),
     };
 
@@ -185,7 +199,7 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
       .insert(reports)
       .values({
         breakId,
-        rating: validated.rating,
+        rating: computedRating,
         headline: validated.headline,
         conditions: validated.conditions,
         forecast: validated.forecast,
@@ -196,7 +210,7 @@ export async function generateSurfReport(breakId: string): Promise<SurfReportWit
       .onConflictDoUpdate({
         target: reports.breakId,
         set: {
-          rating: validated.rating,
+          rating: computedRating,
           headline: validated.headline,
           conditions: validated.conditions,
           forecast: validated.forecast,

@@ -153,7 +153,7 @@ export function BreakCard({
           <p className="mt-3 text-sm text-on-surface-variant">
             {surfRange} · {periodLabel} · {windSummary}
           </p>
-          <p className="mt-1 text-sm text-on-surface-variant">{decision.description}</p>
+          <p className="mt-1 text-sm text-on-surface-variant">{reportConditions ?? decision.description}</p>
 
           <p className="mt-3 text-xs uppercase tracking-[0.2em] text-on-surface-variant">
             Updated {lastUpdated ?? 'recently'}
